@@ -43,4 +43,6 @@ adb shell am instrument -w -e endpoint http://127.0.0.1:8789/v1 im.modolanguage.
 
 SDK/JDK/Gradle路径可通过构建脚本参数指定。Debug 包含真实编辑框 `TypingActivity` 和测试 instrumentation，Release 不包含。正式签名需改为发布密钥。首次使用九键建立索引，性能应在目标手机继续观察。
 
+本机服务默认8797端口，Android模拟器地址为 `http://10.0.2.2:8797/v1`；`.env.example` 已允许该Host。修改端口时也要修改ALLOWED_HOSTS。实体手机使用可访问的HTTPS服务地址。
+
 产品数据获取沿用 `tools/release/data-fetch.sh` 和 `data.lock` 指向的青简数据包，校验 SHA256；数据原许可保持。源码及必要数据的获取地址必须与发出的二进制版本对应，不能只提供上游原版源码。
