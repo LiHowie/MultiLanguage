@@ -11,7 +11,7 @@ name = "modo-settings"
 path = "src/main.rs"
 
 [dependencies]
-base64 = "0.22.1"
+base64 = "0.23.1"
 qingjian-platform.workspace = true
 qingjian-predict.workspace = true
 serde_json.workspace = true
