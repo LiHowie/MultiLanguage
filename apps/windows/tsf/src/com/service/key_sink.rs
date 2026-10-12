@@ -125,6 +125,14 @@ impl TextService_Impl {
     /// 组句中功能键 / 方向键 / 可打印字符都吃；没在组句时数字 / 标点也先「测吃」送去转全角（中英各有一份开关），
     /// Server 不转的回 Passthrough 再放行；`?` 是问字前缀。
     fn would_eat(&self, event: &KeyEvent) -> bool {
+        if !self.shared.composing()
+            && !event.modifiers.has_command_key()
+            && self.input_settings.get().is_some_and(|input| {
+                input.voice_insert != 0 && event.virtual_key == input.voice_insert
+            })
+        {
+            return true;
+        }
         let shift_letter_compose = self
             .input_settings
             .get()

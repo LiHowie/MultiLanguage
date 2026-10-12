@@ -1,3 +1,4 @@
+use crate::TranslationStyle;
 use qingjian_core::PredictionPolicy;
 use serde::{Deserialize, Serialize};
 
@@ -5,6 +6,12 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct PredictConfig {
+    /// 魔多会员服务；凭证是用户会话令牌，模型供应商密钥仅存于服务端。
+    pub membership_service: bool,
+
+    /// 此设备是否同意云端处理当前输入和主动录音。
+    pub cloud_consent: bool,
+
     /// 是否启用。
     pub enabled: bool,
 
@@ -38,6 +45,15 @@ pub struct PredictConfig {
     /// 组句中要不要整句补全。
     pub sentence: bool,
 
+    /// 当前整句候选自动翻译；独立于云联想，默认关闭。
+    pub sentence_translation: bool,
+
+    /// 整句与选区翻译的表达风格。
+    pub translation_style: TranslationStyle,
+
+    /// 整句翻译在停键后等待的时间（毫秒）。
+    pub translation_debounce_ms: u64,
+
     /// 推理强度，随请求发 `reasoning_effort`：`none` 关掉模型的思考（联想要的是快，不是想），
     /// 其余 minimal / low / medium / high / xhigh 照传；留空则不发（给不认这个参数的接口）。
     /// DeepSeek V4 这类默认带思考的模型不关会把 token 预算全花在思考上，正文为空。
@@ -47,6 +63,8 @@ pub struct PredictConfig {
 impl Default for PredictConfig {
     fn default() -> Self {
         Self {
+            membership_service: false,
+            cloud_consent: false,
             enabled: false,
             base_url: "https://api.deepseek.com".to_owned(),
             model: "deepseek-v4-flash".to_owned(),
@@ -58,6 +76,9 @@ impl Default for PredictConfig {
             lookahead: 32,
             slots: 2,
             sentence: true,
+            sentence_translation: false,
+            translation_style: TranslationStyle::Conversational,
+            translation_debounce_ms: 800,
             reasoning_effort: "none".to_owned(),
         }
     }
@@ -66,6 +87,14 @@ impl Default for PredictConfig {
 impl PredictConfig {
     /// 配置里的密钥优先，其次环境变量；两边都没有返回 `None`。
     pub fn resolve_api_key(&self) -> Option<String> {
+        if self.membership_service {
+            return self
+                .api_key
+                .as_deref()
+                .map(str::trim)
+                .filter(|key| !key.is_empty())
+                .map(str::to_owned);
+        }
         self.api_key
             .as_deref()
             .map(str::trim)

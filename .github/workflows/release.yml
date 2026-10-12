@@ -32,6 +32,8 @@ env:
 
 jobs:
   prepare:
+    # 保留上游流程作参考，魔多需要自己的 Windows/Android 签名及发版流程。
+    if: github.repository == 'qingjian-team/qingjian'
     runs-on: ubuntu-26.04
     permissions:
       contents: write

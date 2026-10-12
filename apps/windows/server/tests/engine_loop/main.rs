@@ -5,6 +5,7 @@ mod composing;
 mod english;
 mod modes;
 mod rescoring;
+mod sentence_translation;
 mod shortcuts;
 mod status;
 mod support;

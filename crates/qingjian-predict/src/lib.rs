@@ -12,7 +12,10 @@ mod config;
 mod connection;
 mod error;
 mod gloss;
+mod membership;
 mod prompt;
+mod sentence_translation;
+mod translation_style;
 mod worker;
 
 pub use cloud_predictor::CloudPredictor;
@@ -20,3 +23,6 @@ pub use config::PredictConfig;
 pub use connection::{ConnectionReport, ConnectionTest};
 pub use error::PredictError;
 pub use gloss::CloudGlossFiller;
+pub use membership::MembershipClient;
+pub use sentence_translation::CloudSentenceTranslator;
+pub use translation_style::TranslationStyle;

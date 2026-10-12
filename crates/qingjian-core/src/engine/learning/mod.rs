@@ -41,7 +41,10 @@ impl Engine {
     pub fn note_displayed<'a>(&mut self, candidates: impl IntoIterator<Item = &'a Candidate>) {
         self.displayed.clear();
         for candidate in candidates {
-            if candidate.kind == CandidateKind::English {
+            if matches!(
+                candidate.kind,
+                CandidateKind::English | CandidateKind::Sentence
+            ) {
                 continue;
             }
             let Some(translation) = &candidate.translation else {

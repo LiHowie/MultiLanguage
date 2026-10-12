@@ -5,6 +5,7 @@
 mod cloud_status;
 mod component;
 mod controls;
+mod learning;
 mod message;
 mod notice;
 mod pages;
@@ -39,6 +40,7 @@ pub(crate) struct Settings {
 
     /// 云服务「测试连接」的状态。
     cloud_status: CloudStatus,
+    learning: learning::LearningState,
 
     /// 「辅码」页的触发键录制状态。
     recorder: Recorder,
@@ -68,12 +70,12 @@ pub(crate) struct Settings {
 }
 
 impl Settings {
-    /// `%APPDATA%\Qingjian\config.toml`；取不到 `APPDATA` 退回工作目录。
+    /// `%APPDATA%\Modo\config.toml`；取不到 `APPDATA` 退回工作目录。
     fn config_path() -> PathBuf {
         qingjian_platform::dirs::config_path().unwrap_or_else(|| PathBuf::from("config.toml"))
     }
 
-    /// 检查更新的结果文件 `%APPDATA%\Qingjian\update.json`（Server 写，这里读）。
+    /// 检查更新的结果文件 `%APPDATA%\Modo\update.json`（Server 写，这里读）。
     fn update_state_path() -> Option<PathBuf> {
         qingjian_platform::dirs::user_dir().map(|dir| dir.join("update.json"))
     }
@@ -85,7 +87,7 @@ impl Settings {
         }
     }
 
-    /// 数据目录 `%APPDATA%\Qingjian`。
+    /// 数据目录 `%APPDATA%\Modo`。
     fn data_dir(&self) -> &Path {
         self.path.parent().unwrap_or_else(|| Path::new("."))
     }
@@ -116,6 +118,7 @@ impl Settings {
 
     fn page_content(&self, context: &mut ViewContext<Self>) -> View {
         match self.page.as_str() {
+            "learning" => pages::learning::view(self, context),
             "candidates" => candidates::view(self, context),
             "shortcut" => shortcut::view(self, context),
             "cloud" => cloud::view(self, context),

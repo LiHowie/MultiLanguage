@@ -10,7 +10,7 @@ case "$(uname -s)" in
   MINGW*|MSYS*|CYGWIN*)
     # Server 的 build.rs 会嵌 uiAccess manifest，嵌了它的测试二进制没签名起不来（os error 740）；
     # 与 ci.yml 的 windows job 一样关掉
-    test_scope=(--workspace --exclude qingjian-macos)
+    test_scope=(--workspace --exclude qingjian-macos --exclude qingjian-linux-server)
     export QINGJIAN_UIACCESS=0
     ;;
   *)

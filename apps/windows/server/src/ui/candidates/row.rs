@@ -42,6 +42,7 @@ pub(crate) fn from_candidate(position: usize, candidate: &Candidate, show_code: 
         text: candidate.text.clone(),
         code,
         annotation,
+        annotation_below: candidate.kind == CandidateKind::Sentence,
         cloud: candidate.kind == CandidateKind::Cloud,
     }
 }

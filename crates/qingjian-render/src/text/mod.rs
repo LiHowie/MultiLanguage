@@ -6,7 +6,7 @@ mod style;
 use std::collections::HashMap;
 
 use cosmic_text::fontdb::ID;
-use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, SwashCache, SwashContent};
+use cosmic_text::{Attrs, Buffer, FontSystem, Metrics, Shaping, SwashCache, SwashContent, Wrap};
 
 use crate::canvas::Canvas;
 use crate::fonts::{FontLibrary, Trak, UI_FAMILY};
@@ -80,6 +80,41 @@ impl TextPainter {
         y: f32,
     ) -> f32 {
         self.shape(text, style);
+        self.draw_shaped(canvas, style, x, y)
+    }
+
+    pub(crate) fn measure_wrapped(
+        &mut self,
+        text: &str,
+        style: &TextStyle,
+        width: f32,
+    ) -> TextSize {
+        self.shape_with_width(text, style, Some(width));
+        let mut size = TextSize {
+            width: 0.0,
+            height: 0.0,
+        };
+        for run in self.buffer.layout_runs() {
+            size.width = size.width.max(run.line_w);
+            size.height += style.line_height;
+        }
+        size
+    }
+
+    pub(crate) fn draw_wrapped(
+        &mut self,
+        canvas: &mut Canvas,
+        text: &str,
+        style: &TextStyle,
+        x: f32,
+        y: f32,
+        width: f32,
+    ) {
+        self.shape_with_width(text, style, Some(width));
+        self.draw_shaped(canvas, style, x, y);
+    }
+
+    fn draw_shaped(&mut self, canvas: &mut Canvas, style: &TextStyle, x: f32, y: f32) -> f32 {
         let mut width = 0.0_f32;
         let mut strike: Option<(f32, f32)> = None;
         let mut underline: Option<(f32, f32)> = None;
@@ -154,12 +189,21 @@ impl TextPainter {
     }
 
     fn shape(&mut self, text: &str, style: &TextStyle) {
+        self.shape_with_width(text, style, None);
+    }
+
+    fn shape_with_width(&mut self, text: &str, style: &TextStyle, width: Option<f32>) {
         let attrs = Attrs::new()
             .family(UI_FAMILY)
             .color(style.color.to_cosmic());
         self.buffer
             .set_metrics(Metrics::new(style.size, style.line_height));
-        self.buffer.set_size(None, None);
+        self.buffer.set_wrap(if width.is_some() {
+            Wrap::WordOrGlyph
+        } else {
+            Wrap::None
+        });
+        self.buffer.set_size(width, None);
         self.buffer.set_text(text, &attrs, Shaping::Advanced, None);
         self.buffer.shape_until_scroll(&mut self.font_system, false);
     }

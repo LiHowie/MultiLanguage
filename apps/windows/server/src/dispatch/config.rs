@@ -9,6 +9,8 @@ use super::RenderSettings;
 /// Router 要用的配置项，与 macOS 壳的 `Host` 字段对齐。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RouterConfig {
+    /// 已准备语音结果的插入键。
+    pub voice_insert: u32,
     /// 每页候选数（`[general] page_size`）。
     pub page_size: usize,
 
@@ -25,10 +27,10 @@ pub struct RouterConfig {
     /// 候选窗口外观（`[general] theme`）。
     pub theme: ThemeMode,
 
-    /// 候选窗口 / 状态条由青简渲染器还是 GDI 画（`[general] renderer`）。
+    /// 候选窗口 / 状态条由魔多渲染器还是 GDI 画（`[general] renderer`）。
     pub renderer: CandidateRenderer,
 
-    /// 候选窗口字体的字族名（`[general] font`），空为系统字体；只对青简渲染器生效。
+    /// 候选窗口字体的字族名（`[general] font`），空为系统字体；只对魔多渲染器生效。
     pub font: String,
 
     /// 拼音显示位置（`[general] preedit`）。
@@ -105,6 +107,7 @@ impl RouterConfig {
 impl From<&Config> for RouterConfig {
     fn from(config: &Config) -> Self {
         Self {
+            voice_insert: config.shortcut.voice_insert,
             page_size: config.general.page_size(),
             cloud_slots: config.predict.slots,
             shift_letter_compose: config.general.shift_letter.compose(),

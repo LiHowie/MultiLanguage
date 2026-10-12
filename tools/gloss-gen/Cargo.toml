@@ -7,7 +7,7 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-async-openai.workspace = true
+async-openai = { workspace = true, features = ["native-tls"] }
 clap.workspace = true
 dotenvy.workspace = true
 qingjian-core.workspace = true

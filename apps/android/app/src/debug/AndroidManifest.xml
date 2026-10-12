@@ -1,0 +1,4 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <instrumentation android:name="im.modolanguage.android.ModoSmokeInstrumentation" android:targetPackage="im.modolanguage.android" android:label="魔多集成验证" />
+    <application><activity android:name=".TypingActivity" android:exported="true" android:windowSoftInputMode="stateAlwaysVisible"/></application>
+</manifest>

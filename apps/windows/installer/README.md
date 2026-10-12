@@ -1,18 +1,20 @@
-# 青简 Windows 安装包
+# 魔多 Windows 安装包
+
+当前开发版提供ZIP：`build.ps1 -Zip` 构建后输出 `dist/Modo-0.1.0-dev-Windows.zip`，含管理员安装/卸载脚本、自包含运行时、两种位数DLL和许可。操作见[魔多构建说明](../../../docs/notes/modo-build.md)。下文Inno为后续EXE打包方式，已有Inno环境时可使用；原上游自动发版流程在魔多仓库禁用。
 
 用 [Inno Setup](https://jrsoftware.org/isinfo.php) 打的安装包，把 TSF DLL（64 位与 32 位各一份）、Server、设置程序与随包数据一起装进
-`C:\Program Files\Qingjian`，注册文本服务，并设登录自启。对应 macOS 的 pkg。
+`C:\Program Files\Modo`，注册文本服务，并设登录自启。对应 macOS 的 pkg。
 
 ## 安装布局
 
 ```
-C:\Program Files\Qingjian\
-    qingjian_tsf-<版本>.dll       TSF 文本服务（64 位；被加载进每个应用进程；按版本起名，见「升级」）
-    qingjian_tsf-<版本>-x86.dll   同上的 32 位版（企业微信 / WPS / 32 位 QQ 这类 32 位应用只能加载它）
-    qingjian-server.exe       输入内核 Server（跑在应用进程外）
-    qingjian-settings.exe     设置界面
+C:\Program Files\Modo\
+    modo_tsf-<版本>.dll       TSF 文本服务（64 位；被加载进每个应用进程；按版本起名，见「升级」）
+    modo_tsf-<版本>-x86.dll   同上的 32 位版（企业微信 / WPS / 32 位 QQ 这类 32 位应用只能加载它）
+    modo-server.exe       输入内核 Server（跑在应用进程外）
+    modo-settings.exe     设置界面
     Microsoft.UI.Xaml.dll …   设置程序自带的 Windows App Runtime（自包含部署，见下节；约 56 MB / 185 个文件）
-    qingjian.ico              开始菜单 / 启动项快捷方式的图标（exe 里也嵌了一份）
+    modo.ico              开始菜单 / 启动项快捷方式的图标（exe 里也嵌了一份）
     data\generated\           dict.qj / lm.qj / glossary-{en,ja,zh}.qj / english.tsv / dicts\*.qj
     data\generated\codes\     随包辅码码表 stroke.qj + LICENSE-CNS11643.txt（tools\dict-convert 的 pack codes 生成）
     assets\                   emoji\ levels\ sample\
@@ -21,16 +23,16 @@ C:\Program Files\Qingjian\
 Server 与设置程序按 **exe 相对**定位随包资源（`qingjian_platform::resources`）：装机时资源与 exe 同级，
 开发时是仓库 `ime\`（exe 在 `target\{debug,release}\` 下往上三层）。相对写法两套布局一致，只有根不同。
 
-用户数据仍在 `%APPDATA%\Qingjian`（config.toml、密钥 .env、学习数据、统计），三个进程的日志在 `%LOCALAPPDATA%\Qingjian\logs`（`server.` / `tsf.` / `settings.` 前缀，按天，留 7 天）；
-卸载不动这些。图标由 `regsvr32` 写到 `%ProgramData%\Qingjian\qingjian.ico`（DLL 里 include_bytes 内嵌）。
+用户数据仍在 `%APPDATA%\Modo`（config.toml、密钥 .env、学习数据、统计），三个进程的日志在 `%LOCALAPPDATA%\Modo\logs`（`server.` / `tsf.` / `settings.` 前缀，按天，留 7 天）；
+卸载不动这些。图标由 `regsvr32` 写到 `%ProgramData%\Modo\modo.ico`（DLL 里 include_bytes 内嵌）。
 
 ## 安装程序做的几件事
 
 1. **结束旧进程**：`PrepareToInstall` 里 `taskkill` Server 与设置程序（只有这两个 exe 要覆盖）。
 2. **应用容器权限**：`icacls` 给安装目录加 `ALL APPLICATION PACKAGES`（SID `*S-1-15-2-1`）读+执行。
-   不加的话 UWP/AppContainer 应用（任务栏搜索、设置）读不到 DLL，切不到青简。
+   不加的话 UWP/AppContainer 应用（任务栏搜索、设置）读不到 DLL，切不到魔多。
 3. **注册文本服务**：64 位 DLL 用 `regsvr32`、32 位 DLL 用 `SysWOW64\regsvr32`，各注册一次（各自写进自己视图的 HKCR，`CTF\TIP` 两边共用；要管理员——安装程序本就提权）。
-4. **清旧 DLL**：装完删历次版本留下的 `qingjian_tsf*.dll`，仍被应用占用的登记成重启后删（`RestartReplace`）。
+4. **清旧 DLL**：装完删历次版本留下的 `modo_tsf*.dll`，仍被应用占用的登记成重启后删（`RestartReplace`）。
 5. **登录自启**：「启动」文件夹放 Server 快捷方式（Explorer 走 ShellExecute 拉起才拿到 uiAccess；计划任务拿不到）。
 6. **立即启动**：完成页以当前非提升用户 ShellExecute 起一次 Server，装完就能用，不必先注销。
 
@@ -38,10 +40,10 @@ Server 与设置程序按 **exe 相对**定位随包资源（`qingjian_platform:
 
 ## 升级：DLL 被占用怎么办
 
-`qingjian_tsf.dll` 被加载进每一个有文本框的应用进程，文件锁着覆盖不了；Inno 缺省的 `CloseApplications`
+`modo_tsf.dll` 被加载进每一个有文本框的应用进程，文件锁着覆盖不了；Inno 缺省的 `CloseApplications`
 用 Restart Manager 找出所有占用者要求关闭——对输入法 DLL 就是「关掉一切」，所以关掉它（`CloseApplications=no`），改成：
 
-- DLL **按版本起名并排装**（`DestName: qingjian_tsf-<版本>.dll`），新文件从不与旧文件撞名；
+- DLL **按版本起名并排装**（`DestName: modo_tsf-<版本>.dll`），新文件从不与旧文件撞名；
 - 只 `regsvr32` 新文件（InprocServer32 指向它）。**不要**对旧 DLL `regsvr32 /u`：那会把整个 CLSID / profile 注销掉；
 - 已开着的应用继续用进程里的旧 DLL 直到重启，Server 两个版本都服务（`OpenSession` 带协议版本，对不上只记警告）；
 - 装完删旧 DLL，删不掉的登记成重启后删。
@@ -52,7 +54,7 @@ Server 与设置程序按 **exe 相对**定位随包资源（`qingjian_platform:
 AppModel API 把框架包加进进程包图，Windows 10 上没有那两个函数（定位见 `docs\notes\windows-win10.md`）。
 所以设置程序用**自包含部署**——`apps\windows\settings\build.rs` 让 `windows-reactor-setup` 把 Windows App Runtime
 铺到 `target\release\`，打包时按 `settings-runtime.txt` 挑进 `target\installer\settings-runtime`，本目录的
-`qingjian.iss` 再整个目录装到 `{app}` 下、与 `qingjian-settings.exe` 同级。
+`qingjian.iss` 再整个目录装到 `{app}` 下、与 `modo-settings.exe` 同级。
 
 - 这些文件是运行时必需：少一件（或层级装错）设置窗口就起不来，`build.ps1` 发现缺文件会直接失败。
 - 升级 `windows-reactor` / `windows-reactor-setup` 时，照新版 crate 的 `assets/runtime.txt` 核对 `settings-runtime.txt`。

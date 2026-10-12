@@ -1,0 +1,24 @@
+[package]
+name = "qingjian-android-native"
+version = "0.1.0-dev"
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[lib]
+name = "qingjian_android"
+crate-type = ["cdylib", "rlib"]
+
+[lints]
+workspace = true
+
+[dependencies]
+qingjian-core.workspace = true
+qingjian-dictionary.workspace = true
+qingjian-translate.workspace = true
+qingjian-learning.workspace = true
+qingjian-lm.workspace = true
+qingjian-predict.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+jni.workspace = true

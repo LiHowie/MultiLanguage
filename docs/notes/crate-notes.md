@@ -94,6 +94,20 @@ TSV 解析、查询与生成工具把 `lue` / `nue` 统一成 `lve` / `nve`。
 - 问字键（缺省 `u`）开头是问字模式（`PredictionKind::Question`，答案带读音、不校验拼音），`?` 开头要 `ModeKeys::question_mark` 开着才算（配置 `[shortcut] question_mark`，缺省关，壳用 `Engine::takes_question_mark` 决定空缓冲区的 `?` 是入口还是标点）；`PredictionKind::Translate` 是壳里快捷键触发的「翻译选中文字」
   （双向：汉字为主译成学习语言，外文译回中文，`prediction::translation_target`），译文走结果的 `sentence`。
 
+### 整句候选翻译
+
+`Engine::set_sentence_translator` 注入 `SentenceTranslator`，壳在缓冲变化、重排或高亮变化后调用 `request_sentence_translation`，
+按整句候选发请求；`poll_sentence_translation` 收结果，`annotate` 从独立缓存补上单条译文。代次与学习语言必须匹配，
+清空缓冲、取消、进入私密输入或重配提供方会作废请求；关闭学习语言不发。只翻译 2–500 字的 `CandidateKind::Sentence`，
+缓存最多 64 条，只保存在内存，句子不进入个人词语释义表和词汇统计。
+
+`qingjian-predict::CloudSentenceTranslator` 使用独立后台线程和单个最新请求槽位；`[predict] sentence_translation` 默认关闭，
+独立于 `enabled`，但共用 `base_url` / `model` / API 密钥 / 超时；`translation_debounce_ms` 默认 800 ms（限 100–5000 ms）。
+`translation_style = "conversational" | "formal"` 控制口语 / 书面，也用于已有选区翻译；两种翻译均分配 2000 tokens，避免沿用词联想的 200 tokens 截断句子。
+Windows 接线在 `dispatch/reload` / `composed` / `message` / `rescore`；渲染行 `annotation_below` 把竖排句子译文移到原文下，
+`qingjian-render` 用 `WordOrGlyph` 按最多 560 pt 换行，横排高亮译文也换行。macOS / Linux 暂未接自动整句翻译；共享 Core 与网络提供方可复用。
+Windows 的 GDI 备用绘制也采用同样的双行结构，通过 `ui/candidates/paragraph` 使用 `DrawTextW` 换行。
+
 ## crates/qingjian-format
 
 `.qj` 数据容器（`Container` mmap 读、`Writer` 写、`Table<T>` / `Text` 零拷贝视图、`hash` 可落盘哈希索引、`Metadata` 名称 / 许可证 / 署名）。
@@ -342,3 +356,11 @@ DLL 不读文件、不查 mtime。`SessionOpened` 只回过协议版本对得上
 Unix socket 用共享长度前缀与 Frame（当前公共版本 7，与 `PROTOCOL_VERSION` 同步，Fcitx5 插件里写死在 `qingjian.cpp` 的 OpenSession）；插件复用一条连接，每个上下文独立会话。Linux v3 扩展逐会话握手、确认 Sensitive/Password/Disable 后接受按下/释放、焦点和点击事实。
 候选回报绑定连接代次、上下文和服务端帧序号，仅当前聚焦页的有效释义进入 `note_displayed`，不把生成帧算作已展示。
 `[general] preedit` 使用已有 `both` / `inline` / `window`；没有新增 Linux 自绘配置。详见 [linux-fcitx5.md](linux-fcitx5.md)。
+## apps/android
+
+新增的 `apps/android` 复用 Core 与 Predict 的整句翻译，JNI 入口在 `native/src/bridge.rs`，键盘与设置在 `app`，构建入口为 `scripts/build.ps1`。
+最低 Android 8.0，三个 ABI；运行时使用产品词库 / bigram 数据和三门语言释义表。实现、工具与验证见 [Android 工程记录](android.md)。
+
+## 魔多扩展
+
+Core新增engine/keypad数字码索引和有界组句，数字消耗按候选拼音长度；平台不能自行做九键排序。predict新增MembershipClient，服务端会话令牌仅来自配置，不回落供应商环境变量。Android JNI新增membershipRequest，会员API、翻译与纠错都通过共用服务接口；原始录音只在内存。魔多默认关闭输入日志与上游更新检查。

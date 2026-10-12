@@ -21,11 +21,16 @@ impl Component for Settings {
         let path = Self::config_path();
         Self::ensure_config_file(&path);
         let config = Config::load(&path).unwrap_or_default();
+        let mut learning = super::learning::LearningState::default();
+        if config.predict.membership_service {
+            learning.url = config.predict.base_url.clone();
+        }
         Self {
             config,
             path,
             page: "general".to_string(),
             cloud_status: CloudStatus::Idle,
+            learning,
             recorder: Recorder::Idle,
             record_box: ElementRef::new(),
             notice: Notice::default(),
@@ -41,8 +46,15 @@ impl Component for Settings {
     }
 
     fn update(&mut self, message: Message, context: &ComponentContext<Self>) {
+        if let Message::Membership(ref learning) = message {
+            self.update_learning(learning.clone(), context);
+            return;
+        }
         match message {
             Message::Navigate(Some(tag)) => {
+                if self.page != tag {
+                    self.cancel_learning();
+                }
                 self.page = tag;
                 // 上一页的导入提示不跟着过来
                 self.notice.clear();
@@ -142,6 +154,16 @@ impl Component for Settings {
                 self.save("predict", "slots", slots);
             }
             Message::CloudSentence(on) => self.save("predict", "sentence", on),
+            Message::SentenceTranslation(on) => self.save("predict", "sentence_translation", on),
+            Message::TranslationStyle(Some(i))
+                if i < qingjian_predict::TranslationStyle::ALL.len() =>
+            {
+                self.save(
+                    "predict",
+                    "translation_style",
+                    qingjian_predict::TranslationStyle::ALL[i].code(),
+                );
+            }
             Message::TestConnection => {
                 if matches!(self.cloud_status, CloudStatus::Testing) {
                     return;
@@ -316,7 +338,7 @@ impl Component for Settings {
     }
 
     fn view(&self, _input: &(), context: &mut ViewContext<Self>) -> View {
-        context.window_title("青简设置");
+        context.window_title("魔多设置");
         let item = |tag: &str, label: &str, symbol| {
             KeyedView::new(
                 tag,
@@ -333,6 +355,7 @@ impl Component for Settings {
             )
         };
         let items = [
+            item("learning", "会员与语音老师", Symbol::Audio),
             item("general", "通用", Symbol::Setting),
             item("candidates", "候选窗口", Symbol::View),
             item("shortcut", "快捷键", Symbol::Keyboard),
@@ -346,7 +369,7 @@ impl Component for Settings {
         ];
         NavigationView::new()
             .pane_display_mode(NavigationViewPaneDisplayMode::Left)
-            .pane_title("青简")
+            .pane_title("魔多")
             .open_pane_length(220.0)
             .is_pane_open(true)
             .is_pane_toggle_button_visible(false)

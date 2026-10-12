@@ -37,6 +37,15 @@ impl Renderer {
             return None;
         }
         let style = m.annotation_style(m.theme.colors.gloss);
+        if row.annotation_below {
+            let text: String = row
+                .annotation
+                .iter()
+                .map(|(text, _)| text.as_str())
+                .collect();
+            let size = self.text.measure_wrapped(&text, &style, m.px(560.0));
+            return Some((size.width, size.height + m.row_padding()));
+        }
         let width: f32 = row
             .annotation
             .iter()
@@ -131,6 +140,22 @@ impl Renderer {
         if let Some(row) = frame.highlighted.and_then(|i| frame.rows.get(i)) {
             let mut x = left + m.padding() + inset;
             let annotation_top = y + row_height + m.row_padding() / 2.0;
+            if row.annotation_below {
+                let text: String = row
+                    .annotation
+                    .iter()
+                    .map(|(text, _)| text.as_str())
+                    .collect();
+                self.text.draw_wrapped(
+                    canvas,
+                    &text,
+                    &m.annotation_style(m.theme.colors.gloss),
+                    x,
+                    annotation_top,
+                    m.px(560.0),
+                );
+                return;
+            }
             for (segment, tone) in &row.annotation {
                 let style = m.annotation_style(m.tone_color(*tone));
                 x += self.draw_text(canvas, segment, &style, x, annotation_top);

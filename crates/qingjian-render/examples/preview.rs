@@ -78,7 +78,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
     let shadow = (!args.no_shadow).then_some(Shadow::mac_panel());
 
-    let scenes: [(&str, Frame, Layout); 7] = [
+    let scenes: [(&str, Frame, Layout); 9] = [
+        (
+            "sentence-translation-vertical",
+            sentence_translation(),
+            Layout::Vertical,
+        ),
+        (
+            "sentence-translation-horizontal",
+            sentence_translation(),
+            Layout::Horizontal,
+        ),
         ("matrix-horizontal", matrix(), Layout::Horizontal),
         ("nihao-vertical", nihao(), Layout::Vertical),
         (
@@ -390,6 +400,50 @@ fn probe() -> Frame {
     }
 }
 
+/// 整句译文与普通词释义同时出现，检查换行、高亮与后续行的位置。
+fn sentence_translation() -> Frame {
+    let mut sentence = annotated(
+        0,
+        "我觉得这个输入法最大的问题是没办法翻译句子",
+        &[(
+            "I think the biggest problem with this input method is that it can't translate whole sentences, which makes it harder for me to learn a foreign language.",
+            Tone::Gloss,
+        )],
+        false,
+    );
+    sentence.annotation_below = true;
+    Frame {
+        preedit: Some(Preedit {
+            segments: vec![PreeditSegment {
+                text: "wo'jue'de'zhe'ge'shu'ru'fa".to_owned(),
+                style: PreeditStyle::Typed,
+            }],
+            cursor: 25,
+        }),
+        rows: vec![
+            sentence,
+            annotated(
+                1,
+                "我觉得",
+                &[("phr. ", Tone::Faint), ("I think", Tone::Fresh)],
+                false,
+            ),
+            annotated(
+                2,
+                "莴苣",
+                &[("n. ", Tone::Faint), ("lettuce", Tone::Fresh)],
+                false,
+            ),
+        ],
+        highlighted: Some(0),
+        columns: 0,
+        column_ems: Vec::new(),
+        footer: Some("1/3".to_owned()),
+        sentence: None,
+        status: None,
+    }
+}
+
 fn annotated(index: usize, text: &str, annotation: &[(&str, Tone)], cloud: bool) -> Row {
     Row {
         index: (index + 1).to_string(),
@@ -400,5 +454,6 @@ fn annotated(index: usize, text: &str, annotation: &[(&str, Tone)], cloud: bool)
             .map(|(s, tone)| ((*s).to_owned(), *tone))
             .collect(),
         cloud,
+        annotation_below: false,
     }
 }

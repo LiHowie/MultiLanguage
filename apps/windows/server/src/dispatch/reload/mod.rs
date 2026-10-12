@@ -11,7 +11,7 @@ use std::time::{Duration, Instant, SystemTime};
 
 use qingjian_core::{Engine, Language, NoGlossFiller, NoPredictor, NoTranslator};
 use qingjian_platform::{Config, code_tables};
-use qingjian_predict::{CloudGlossFiller, CloudPredictor, PredictConfig};
+use qingjian_predict::{CloudGlossFiller, CloudPredictor, CloudSentenceTranslator, PredictConfig};
 
 pub(super) use self::state::ConfigReload;
 pub use self::state::DataDirs;
@@ -32,6 +32,20 @@ fn mtime(path: &Path) -> Option<SystemTime> {
 
 /// 按 `[predict]` 接云联想与释义兜底；关着或缺密钥就退回本地实现。启动与热加载共用。
 pub fn attach_cloud(engine: &mut Engine, predict: &PredictConfig) {
+    let translator = if predict.sentence_translation {
+        match CloudSentenceTranslator::new(predict) {
+            Ok(translator) => {
+                Some(Box::new(translator) as Box<dyn qingjian_core::SentenceTranslator>)
+            }
+            Err(error) => {
+                tracing::warn!(%error, "整句翻译未启用，请检查 AI 设置");
+                None
+            }
+        }
+    } else {
+        None
+    };
+    engine.set_sentence_translator(translator);
     if !predict.enabled {
         tracing::info!("云联想未开启（[predict] enabled = false）");
         engine.set_predictor(Box::new(NoPredictor));
@@ -246,6 +260,10 @@ impl Router {
         if config.aux_code != reload.applied_aux_code {
             reload.applied_aux_code = config.aux_code.clone();
             self.reload_aux_codes();
+        }
+        // 正在组句时修改 AI、风格或学习语言，当前候选也按新设置翻译。
+        if let Some(super::composed::Composed::Candidates { layout, .. }) = &self.composed {
+            self.engine.request_sentence_translation(layout.local());
         }
     }
 

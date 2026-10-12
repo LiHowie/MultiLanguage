@@ -5,6 +5,7 @@ mod codes;
 mod effect;
 mod input;
 mod shortcut;
+mod speech;
 
 pub(super) use self::codes::{ESCAPE, RETURN};
 pub(super) use self::effect::Effect;

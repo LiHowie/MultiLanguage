@@ -11,6 +11,7 @@ mod learning;
 mod lookup;
 mod privacy;
 mod raw;
+mod sentence_translation;
 mod shuangpin;
 mod zhuyin;
 

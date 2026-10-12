@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    在 Windows 上打青简安装包：release 构建三个产物 + 用 Inno Setup 编 qingjian.iss。
+    在 Windows 上打魔多安装包：release 构建三个产物 + 用 Inno Setup 编 qingjian.iss。
 .DESCRIPTION
     在编译机（MSVC 工具链 + Inno Setup）上跑。步骤：
       1) cargo build --release 出 DLL / Server / 设置程序，再单独编一份 32 位 DLL；
@@ -18,7 +18,7 @@
     候选窗在那几个系统界面里会被盖住，但任何机器都能起。
 #>
 [CmdletBinding()]
-param([switch]$SkipBuild, [switch]$Sign)
+param([switch]$SkipBuild, [switch]$Sign, [switch]$Zip)
 
 $ErrorActionPreference = 'Stop'
 
@@ -48,10 +48,10 @@ if (-not $SkipBuild) {
 
 # 缺一个产物就早报错。
 $targets = @(
-    'release\qingjian_tsf.dll',
-    'i686-pc-windows-msvc\release\qingjian_tsf.dll',
-    'release\qingjian-server.exe',
-    'release\qingjian-settings.exe'
+    'release\modo_tsf.dll',
+    'i686-pc-windows-msvc\release\modo_tsf.dll',
+    'release\modo-server.exe',
+    'release\modo-settings.exe'
 )
 foreach ($t in $targets) {
     $p = Join-Path $Repo "target\$t"
@@ -65,7 +65,10 @@ $runtimeStage = Join-Path $Repo 'target\installer\settings-runtime'
 $runtimeList  = Join-Path $PSScriptRoot 'settings-runtime.txt'
 # 清单是 UTF-8 且带中文注释：不指定编码时 PowerShell 5.1 按 GBK 读，注释末尾的字节会吞掉换行，紧跟其后的一项被当成注释漏掉。
 $wanted = Get-Content $runtimeList -Encoding UTF8 | Where-Object { $_ -and -not $_.StartsWith('#') } | ForEach-Object { $_.Trim() }
-if (Test-Path $runtimeStage) { Remove-Item $runtimeStage -Recurse -Force }
+$runtimeAbsolute = [IO.Path]::GetFullPath($runtimeStage)
+$installerRoot = [IO.Path]::GetFullPath((Join-Path $Repo 'target\installer'))
+if (-not $runtimeAbsolute.StartsWith($installerRoot + '\', [StringComparison]::OrdinalIgnoreCase)) { throw '运行时暂存目录越界' }
+if (Test-Path -LiteralPath $runtimeAbsolute) { Remove-Item -LiteralPath $runtimeAbsolute -Recurse -Force }
 New-Item -ItemType Directory -Path $runtimeStage -Force | Out-Null
 $missing = @()
 foreach ($name in $wanted) {
@@ -85,6 +88,12 @@ if ($Sign) {
     Write-Host '自签产物（uiAccess 要求 Server 代码签名）…' -ForegroundColor Cyan
     $binaries = $targets | ForEach-Object { Join-Path $Repo "target\$_" }
     & (Join-Path $PSScriptRoot 'sign-local.ps1') -Path $binaries
+}
+
+# 开发ZIP使用同一套构建与运行时清单，不依赖 Inno Setup。
+if ($Zip) {
+    & (Join-Path $PSScriptRoot 'package-zip.ps1')
+    return
 }
 
 # 2) 从 server 的 Cargo.toml 读版本（apps\* 各自写死版本，不跟 workspace）。

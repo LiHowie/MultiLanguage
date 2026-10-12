@@ -13,6 +13,7 @@ mod decoded;
 mod extras;
 mod gloss;
 mod input_log;
+mod keypad;
 mod learning;
 mod marked;
 mod mode_keys;
@@ -21,6 +22,7 @@ mod privacy;
 mod query;
 mod raw;
 mod rescoring;
+mod sentence_translation;
 mod session;
 mod setup;
 mod statistics;
@@ -43,6 +45,7 @@ pub use input_log::{
     CommitEntry, INPUT_LOG_VERSION, InputLogEntry, InputLogger, InputSource, LOGGED_CANDIDATES,
     NoInputLogger,
 };
+pub use keypad::Keypad;
 pub use learning::{Forgotten, Learner, NoLearner};
 pub use marked::{AuxSegment, MarkedKind, MarkedSegment};
 pub use mode_keys::{ModeKeys, QUESTION_PREFIX};
@@ -53,6 +56,9 @@ pub use prediction::{
 
 pub use query::Query;
 pub use raw::RawPreedit;
+pub use sentence_translation::{
+    SentenceTranslationRequest, SentenceTranslationResult, SentenceTranslator,
+};
 pub use session::EngineSession;
 pub use statistics::{BOOKS, Book, NoUsageMeter, Usage, UsageMeter, UsageSummary, book_scale};
 pub use timings::Timings;
@@ -206,6 +212,9 @@ pub struct Engine {
 
     /// 释义兜底：释义表里没有的词上屏后问云端；缺省不问。
     gloss_filler: Box<dyn GlossFiller>,
+
+    /// 当前整句候选的异步译文，与词语释义和云联想分开。
+    sentence_translation: sentence_translation::SentenceTranslationState,
 
     /// 候选窗口当前页上的译词（壳每次画完告知），上屏时记成「看到过」。
     displayed: Vec<(Language, String)>,
@@ -426,6 +435,7 @@ impl Engine {
             meter: Box::new(NoUsageMeter),
             vocabulary: Box::new(NoVocabularyTracker),
             gloss_filler: Box::new(NoGlossFiller),
+            sentence_translation: sentence_translation::SentenceTranslationState::default(),
             displayed: Vec::new(),
             last_query: std::cell::RefCell::new(None),
             recording: Vec::new(),

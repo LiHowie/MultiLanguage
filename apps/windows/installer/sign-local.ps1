@@ -11,12 +11,12 @@
 .PARAMETER Path
     要签名的文件（.exe / .dll），可多个。
 .PARAMETER CertSubject
-    自签证书主题，缺省 "CN=Qingjian Dev CodeSign"。
+    自签证书主题，缺省 "CN=Modo Dev CodeSign"。
 #>
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)][string[]]$Path,
-    [string]$CertSubject = 'CN=Qingjian Dev CodeSign'
+    [string]$CertSubject = 'CN=Modo Dev CodeSign'
 )
 
 $ErrorActionPreference = 'Stop'

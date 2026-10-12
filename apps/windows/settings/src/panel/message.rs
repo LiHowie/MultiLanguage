@@ -3,6 +3,7 @@
 /// 设置窗口的消息；「改动」消息带控件新值，`update` 据此落盘。
 #[derive(Clone)]
 pub(crate) enum Message {
+    Membership(super::learning::LearningMessage),
     /// 导航切换分节（`None` 是取消选中，忽略）。
     Navigate(Option<String>),
 
@@ -45,6 +46,8 @@ pub(crate) enum Message {
     CloudBaseUrl(String),
     CloudSlots(Option<f64>),
     CloudSentence(bool),
+    SentenceTranslation(bool),
+    TranslationStyle(Option<usize>),
     TestConnection,
     CloudTestDone(Result<String, String>),
 

@@ -1,0 +1,9 @@
+<resources>
+    <string name="ime_language">中文 · 整句翻译</string>
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#146B54</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">#F4F7F5</item>
+    </style>
+</resources>

@@ -1,5 +1,7 @@
 # docs
 
+魔多当前入口：[产品与服务边界](design/modo.md)、[会员与语音使用](user/learning/modo-membership.md)、[构建与安装](notes/modo-build.md)、[验收记录](notes/modo-verification.md)。其余历史工程记录保留供同步青简上游时对照，不代表魔多已发布对应平台。
+
 README.md 只介绍项目，所有技术内容放在这里，分四类：前三类是给开发者看的内部文档，`user/` 是给用户看的、官网渲染的文档。
 
 | 目录 | 放什么 |

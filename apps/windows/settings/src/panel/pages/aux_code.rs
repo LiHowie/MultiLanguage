@@ -15,7 +15,7 @@ use crate::panel::{Message, Settings};
 /// 随包码表目录：随包根下的 `data/generated/codes/`（与 `dicts/` 并列），与 Server 装配同款。
 const BUNDLED_DIR: &str = "data/generated/codes";
 
-/// 用户导入的码表目录 `%APPDATA%\Qingjian\codes`。
+/// 用户导入的码表目录 `%APPDATA%\Modo\codes`。
 fn user_dir(settings: &Settings) -> PathBuf {
     settings.data_dir().join("codes")
 }
@@ -94,7 +94,7 @@ fn user_list(settings: &Settings, context: &mut ViewContext<Settings>) -> View {
     let tables = code_tables::list(&dir);
     if tables.is_empty() {
         return note(
-            "还没有导入码表。点下面「导入码表」加一张，或把 .qj 放进 %APPDATA%\\Qingjian\\codes。",
+            "还没有导入码表。点下面「导入码表」加一张，或把 .qj 放进 %APPDATA%\\Modo\\codes。",
         );
     }
     let mut rows: Vec<KeyedView> = Vec::with_capacity(tables.len());
@@ -162,7 +162,7 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
                     .on_click(context.message(Message::ImportCodeTable))
                     .content("导入码表…"),
                 note(
-                    "接受 Rime 的 .dict.yaml（要有词、码两列）与现成的 .qj。码表由你自己取得，青简不随包分发第三方形码表。",
+                    "接受 Rime 的 .dict.yaml（要有词、码两列）与现成的 .qj。码表由你自己取得，魔多不随包分发第三方形码表。",
                 ),
             )),
         note(

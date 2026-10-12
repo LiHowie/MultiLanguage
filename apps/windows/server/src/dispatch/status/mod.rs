@@ -1,5 +1,5 @@
 //! 全局中英模式与悬浮状态条：模式只有 Server 这一份，DLL 切了用 `ModeChanged` 报来，激活 / 获焦 / 轮询时用
-//! `SyncMode` 取走（取的同时说明青简是当前输入法，状态条显示）；切成别的输入法时 DLL 发 `ImeSwitched` 收起。
+//! `SyncMode` 取走（取的同时说明魔多是当前输入法，状态条显示）；切成别的输入法时 DLL 发 `ImeSwitched` 收起。
 //! 会话关闭（应用退出）不收——状态条常驻桌面。状态条上的点击经 [`StatusEvent`] 回到这里：
 //! 切模式直接改全局模式，各 DLL 下一拍取走；切标点 / 拖动写回配置文件（热加载会再读回来）。
 
@@ -23,7 +23,7 @@ impl Router {
         self.reconcile_status();
     }
 
-    /// 有 DLL 来取模式：青简是当前输入法。
+    /// 有 DLL 来取模式：魔多是当前输入法。
     pub(super) fn handle_ime_active(&mut self) {
         if !self.config.english_mode {
             self.english = false;
@@ -109,7 +109,7 @@ impl Router {
         }
     }
 
-    /// 开着且青简在前台就显示，否则收起。热加载后也调一次。
+    /// 开着且魔多在前台就显示，否则收起。热加载后也调一次。
     pub(super) fn reconcile_status(&mut self) {
         match self.ime_active.then_some(self.english) {
             Some(english) if self.config.status_enabled => {

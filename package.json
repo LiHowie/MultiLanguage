@@ -1,0 +1,14 @@
+{
+  "name": "modo-language",
+  "version": "0.1.0",
+  "private": true,
+  "license": "GPL-3.0-or-later",
+  "description": "魔多外语学习输入法的账号、会员与学习服务",
+  "engines": {"node": ">=24.0.0"},
+  "scripts": {
+    "start": "node --env-file-if-exists=.env services/api/server.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check.mjs",
+    "member:grant": "node --env-file-if-exists=.env scripts/plan.mjs"
+  }
+}

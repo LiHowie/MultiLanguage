@@ -51,7 +51,7 @@ pub fn serve_pipe(
         Ok(first) => first,
         Err(error) if error.raw_os_error() == Some(ERROR_ACCESS_DENIED.0 as i32) => {
             return Err(io::Error::other(
-                "已有一个 qingjian-server 在运行（命名管道被占），本进程退出",
+                "已有一个 modo-server 在运行（命名管道被占），本进程退出",
             ));
         }
         Err(error) => return Err(error),

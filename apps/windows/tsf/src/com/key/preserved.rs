@@ -16,15 +16,15 @@ use qingjian_platform::{Config, KeyCombo};
 use crate::com::log::log;
 
 /// 本保留键的标识，`OnPreservedKey` 按它认。
-pub(crate) const GUID_TRANSLATE: GUID = GUID::from_u128(0x5c0a7b12_3d4e_4f60_8a91_2b3c4d5e6f70);
+pub(crate) const GUID_TRANSLATE: GUID = GUID::from_u128(0x09bb3fa2_66da_4aaf_8bb4_a48f61a8b410);
 
 /// Ctrl + Alt + Space 中英切换键的保留键标识。
-pub(crate) const GUID_SWITCH_MODE: GUID = GUID::from_u128(0x2f6b8c51_9a34_4e7d_b2c8_5d1e0f3a7b64);
+pub(crate) const GUID_SWITCH_MODE: GUID = GUID::from_u128(0x84d21a3a_3220_4854_8b59_7788840cdef1);
 
 /// msctf.h 的 `TF_MOD_LWIN`（windows crate 没导出）。
 const TF_MOD_LWIN: u32 = 0x08;
 
-/// 读 `%APPDATA%\Qingjian\config.toml` 里的组合；读不到 / 解析失败用缺省。
+/// 读 `%APPDATA%\Modo\config.toml` 里的组合；读不到 / 解析失败用缺省。
 pub(crate) fn load_combo() -> KeyCombo {
     let Some(path) = qingjian_platform::dirs::config_path() else {
         return KeyCombo::TRANSLATE_DEFAULT;
@@ -49,7 +49,7 @@ fn switch_mode_key() -> TF_PRESERVEDKEY {
 
 /// 登记 Ctrl + Alt + Space 为中英切换保留键（`switch_mode` 勾了它时）。
 pub(crate) fn register_switch_mode(keystroke: &ITfKeystrokeMgr, tid: u32) -> Result<()> {
-    let description: Vec<u16> = "切换中英文（青简）".encode_utf16().collect();
+    let description: Vec<u16> = "切换中英文（魔多）".encode_utf16().collect();
     unsafe { keystroke.PreserveKey(tid, &GUID_SWITCH_MODE, &switch_mode_key(), &description) }
 }
 

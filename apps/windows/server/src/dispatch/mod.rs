@@ -93,7 +93,7 @@ pub struct Router {
     /// 全局中英模式（`true` 英文），所有应用共用。DLL 切了报来，激活 / 获焦 / 轮询时取走。
     english: bool,
 
-    /// 当前输入法是不是青简：有 DLL 来取模式就是，切成别的输入法时收起。状态条只在这时显示；
+    /// 当前输入法是不是魔多：有 DLL 来取模式就是，切成别的输入法时收起。状态条只在这时显示；
     /// 应用退出不影响它，状态条是桌面常驻的。
     ime_active: bool,
 
@@ -157,6 +157,7 @@ impl Router {
     /// 所以 DLL 不用自己读配置文件，配置改了也不用重开会话。
     pub(super) fn input_settings(&self) -> InputSettings {
         InputSettings {
+            voice_insert: self.config.voice_insert,
             switch_mode: self.config.switch_mode,
             english_mode: self.config.english_mode,
             shift_letter_compose: self.config.shift_letter_compose,

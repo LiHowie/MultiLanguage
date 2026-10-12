@@ -16,6 +16,9 @@ pub struct Row {
     /// 右侧 annotation，按顺序绘制；没有译文时为空。
     pub annotation: Vec<(String, Tone)>,
 
+    /// 整句译文在竖排时放到原文下方并换行。
+    pub annotation_below: bool,
+
     /// 来自云联想：词前画一个小云朵，与本地候选区分。
     pub cloud: bool,
 }
@@ -28,6 +31,7 @@ impl Row {
             text: text.into(),
             code: None,
             annotation: Vec::new(),
+            annotation_below: false,
             cloud: false,
         }
     }

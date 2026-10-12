@@ -40,10 +40,10 @@ pub struct GeneralConfig {
     /// 横排时上 / 下键把单行展开成多行矩阵（左 / 右键改为移动候选高亮，Esc 第一下先收回）。缺省关：横排下的按键与以前一样。只有 macOS 用。
     pub horizontal_grid: bool,
 
-    /// 候选窗口由青简渲染器还是系统原生绘制。
+    /// 候选窗口由魔多渲染器还是系统原生绘制。
     pub renderer: CandidateRenderer,
 
-    /// 候选窗口字体的字族名；空为系统字体。只对青简渲染器生效，没装这个字体时回到系统字体。
+    /// 候选窗口字体的字族名；空为系统字体。只对魔多渲染器生效，没装这个字体时回到系统字体。
     pub font: String,
 
     /// 组句中的拼音显示在行内、候选窗口还是两处都显示。
@@ -62,7 +62,7 @@ pub struct GeneralConfig {
     /// 收进组句才能打出「C盘」这类混杂词（`Cpan` 与 `cpan` 一样匹配）。
     pub shift_letter: ShiftLetter,
     /// 内置英文模式：开着时单击切换键（`[shortcut] switch_mode`）或按 Caps Lock 能进英文模式。
-    /// 关掉后青简保持中文模式，切换键与语言栏按钮都不再切过去；要打英文请用系统快捷键切到别的输入法。
+    /// 关掉后魔多保持中文模式，切换键与语言栏按钮都不再切过去；要打英文请用系统快捷键切到别的输入法。
     pub english_mode: bool,
 
     /// 中文模式下不在组句时敲的标点转成全角（`，。？！` 等，数字后的 `.` 保持半角）。
@@ -144,7 +144,7 @@ impl Default for GeneralConfig {
             shuangpin: None,
             zhuyin: None,
             log_level: LogLevel::default(),
-            input_log: true,
+            input_log: false,
             learning: true,
             system_text_replacements: true,
         }

@@ -43,6 +43,10 @@ impl Engine {
                     self.english_translator
                         .translate(&text.to_ascii_lowercase())
                 }),
+                CandidateKind::Sentence if !self.private => self
+                    .sentence_translation
+                    .translation(self.translator.language(), &candidate.text)
+                    .or_else(|| self.translator.translate(text)),
                 _ => self.translator.translate(text).map(|mut translation| {
                     self.mark_fresh(&mut translation);
                     translation
@@ -176,7 +180,10 @@ impl Engine {
         self.meter_commit(&candidate.text, source, false);
         // 上屏带译词的中文候选：那一刻用户看着这条译词，记进词汇（英文候选的中文释义不是学习语言，不记）
         if !self.private
-            && candidate.kind != CandidateKind::English
+            && !matches!(
+                candidate.kind,
+                CandidateKind::English | CandidateKind::Sentence
+            )
             && let Some(translation) = &candidate.translation
         {
             for (index, sense) in translation.senses().iter().enumerate() {

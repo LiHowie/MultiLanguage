@@ -155,7 +155,7 @@ fn mode_is_shared_by_every_app() {
     assert_eq!(synced_mode(&mut router, other_app), Some(true));
     assert_eq!(synced_mode(&mut router, SessionId(3)), Some(true));
 
-    // 切成别的输入法收起状态条；再有应用来取模式（又切回青简）就重新显示，模式照旧。
+    // 切成别的输入法收起状态条；再有应用来取模式（又切回魔多）就重新显示，模式照旧。
     router.handle(ClientMessage::ImeSwitched { session: SESSION });
     assert_eq!(recorder.calls().last(), Some(&None));
     assert_eq!(synced_mode(&mut router, other_app), Some(true));

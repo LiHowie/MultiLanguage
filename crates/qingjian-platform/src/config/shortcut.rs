@@ -9,6 +9,8 @@ use super::switch_key::SwitchKeys;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct ShortcutConfig {
+    /// Windows 语音结果插入键；0 关闭，缺省 F8（虚拟键码 119）。
+    pub voice_insert: u32,
     /// 表达式 / 问字模式键，键名与以前一样直接在分节下（`expression` / `question`）。
     #[serde(flatten)]
     pub mode: ModeKeys,
@@ -37,6 +39,7 @@ impl Default for ShortcutConfig {
         #[cfg(not(windows))]
         let (translation, translation_second) = (Modifiers::OPTION, Modifiers::SHIFT_OPTION);
         Self {
+            voice_insert: 0x77,
             mode: ModeKeys::default(),
             switch_mode: SwitchKeys::default(),
             translation,

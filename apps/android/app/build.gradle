@@ -1,0 +1,36 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'im.modolanguage.android'
+    compileSdk 36
+    defaultConfig {
+        applicationId 'im.modolanguage.android'
+        minSdk 26
+        targetSdk 35
+        versionCode 1
+        versionName '0.1.0-dev'
+    }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+    buildTypes {
+        debug { debuggable true }
+        release { minifyEnabled false; signingConfig signingConfigs.debug }
+    }
+    packaging { jniLibs { useLegacyPackaging = false } }
+    sourceSets.main.assets.srcDir layout.buildDirectory.dir('product-assets')
+}
+
+tasks.register('stageProductData', Sync) {
+    from('../../../data/generated') {
+        include 'dict.qj', 'lm.qj', 'glossary-en.qj', 'glossary-ja.qj', 'glossary-es.qj', 'glossary-zh.qj', 'english.tsv'
+        into 'data'
+    }
+    into layout.buildDirectory.dir('product-assets')
+    doFirst {
+        ['dict.qj', 'lm.qj', 'glossary-en.qj', 'glossary-ja.qj', 'glossary-es.qj', 'glossary-zh.qj', 'english.tsv'].each {
+            if (!file('../../../data/generated/' + it).exists()) {
+                throw new GradleException('缺少产品数据：' + it + '，先按 tools/release/data.lock 下载数据包')
+            }
+        }
+    }
+}
+tasks.named('preBuild').configure { dependsOn 'stageProductData' }

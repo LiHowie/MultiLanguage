@@ -167,6 +167,7 @@ impl Router {
     fn handle_poll(&mut self, session: SessionId) -> ServerMessage {
         self.tick();
         let learned = self.engine.poll_glosses();
+        self.engine.poll_sentence_translation();
         if learned > 0 {
             tracing::info!(learned, "释义兜底写入个人释义表");
         }

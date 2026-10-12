@@ -1,4 +1,4 @@
-//! 悬浮状态条：桌面上常驻、可拖动的三格浮窗 `[中 / 英][，。/ ,.][⚙]`。缺省由青简渲染器画（[`super::painter`]），
+//! 悬浮状态条：桌面上常驻、可拖动的三格浮窗 `[中 / 英][，。/ ,.][⚙]`。缺省由魔多渲染器画（[`super::painter`]），
 //! `renderer = "system"` 时复用分层窗口合成器与候选窗口的 GDI 主题。
 //!
 //! 按下鼠标先 `DragDetect`：挪出拖动阈值就交给系统的移动循环（`WM_NCLBUTTONDOWN` + `HTCAPTION`），
@@ -42,7 +42,7 @@ use super::painter::SharedPainter;
 use super::window_class::WindowClass;
 use crate::dispatch::StatusView;
 
-const CLASS_NAME: PCWSTR = w!("QingjianStatusBar");
+const CLASS_NAME: PCWSTR = w!("ModoStatusBar");
 static CLASS: WindowClass = WindowClass::new();
 
 /// 状态条与屏幕边缘的间隙（逻辑像素）。
@@ -72,7 +72,7 @@ pub(super) struct StatusBar {
     /// 摆放状态，与窗口过程共享。
     placement: Rc<Placement>,
 
-    /// 青简渲染器；`None` 走 GDI。
+    /// 魔多渲染器；`None` 走 GDI。
     painter: SharedPainter,
 }
 
@@ -100,7 +100,7 @@ impl StatusBar {
             CreateWindowExW(
                 WS_EX_LAYERED | WS_EX_TOOLWINDOW | WS_EX_TOPMOST | WS_EX_NOACTIVATE,
                 CLASS_NAME,
-                w!("青简状态条"),
+                w!("魔多状态条"),
                 WS_POPUP,
                 0,
                 0,

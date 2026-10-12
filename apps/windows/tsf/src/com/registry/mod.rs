@@ -1,4 +1,4 @@
-//! 自注册：写 COM 的 InprocServer32，经 `ITfInputProcessorProfiles` / `ITfCategoryMgr` 把青简登记成键盘类文本服务。
+//! 自注册：写 COM 的 InprocServer32，经 `ITfInputProcessorProfiles` / `ITfCategoryMgr` 把魔多登记成键盘类文本服务。
 //! 写的是 `HKEY_CLASSES_ROOT`，所以 regsvr32 要管理员。输入法图标文件在 [`icon`]。
 
 mod icon;
@@ -60,7 +60,7 @@ fn register_profile() -> Result<()> {
         let profiles: ITfInputProcessorProfiles = unsafe {
             CoCreateInstance(&CLSID_TF_InputProcessorProfiles, None, CLSCTX_INPROC_SERVER)?
         };
-        // AddLanguageProfile 按 null 扫描读字符串，不补 0 会多读相邻内存（曾显示成「青简C」）。
+        // AddLanguageProfile 按 null 扫描读字符串，不补 0 会多读相邻内存（曾显示成「魔多C」）。
         let description = wide_z(SERVICE_DESCRIPTION);
         let icon = icon::install()
             .map(|path| wide_z(&path.to_string_lossy()))

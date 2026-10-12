@@ -1,6 +1,7 @@
 use std::sync::LazyLock;
 use std::time::Duration;
 
+use crate::TranslationStyle;
 use async_openai::Client;
 use async_openai::config::OpenAIConfig;
 use async_openai::types::chat::{
@@ -8,7 +9,7 @@ use async_openai::types::chat::{
     ChatCompletionRequestUserMessage, CreateChatCompletionRequestArgs,
     CreateChatCompletionResponse, FinishReason, ReasoningEffort, ResponseFormat,
 };
-use qingjian_core::PredictionRequest;
+use qingjian_core::{PredictionKind, PredictionRequest};
 use reqwest::header::{HeaderMap, HeaderValue};
 
 use crate::config::PredictConfig;
@@ -44,6 +45,8 @@ pub struct ChatClient {
 
     /// 接口关思考用的是哪种参数（按接口地址定）。
     thinking_switch: ThinkingSwitch,
+
+    translation_style: TranslationStyle,
 }
 
 impl ChatClient {
@@ -52,20 +55,31 @@ impl ChatClient {
             .with_api_base(config.base_url.trim_end_matches('/'))
             .with_api_key(api_key);
         Self {
-            client: Client::with_config(openai).with_http_client(http_client(&config.base_url)),
+            client: Client::build(http_client(&config.base_url), openai),
             model: config.model.clone(),
             timeout: Duration::from_millis(config.timeout_ms),
             reasoning_effort: parse_reasoning_effort(&config.reasoning_effort),
             thinking_switch: ThinkingSwitch::for_url(&config.base_url),
+            translation_style: config.translation_style,
         }
     }
 
     pub async fn complete(&self, request: &PredictionRequest) -> Result<Reply, PredictError> {
         let user = prompt::user_prompt(request);
         tracing::debug!(sequence = request.sequence, %user, "联想请求");
-        let content = self
-            .chat(prompt::system_prompt(request), &user, MAX_TOKENS)
-            .await?;
+        let (system, budget) = if request.kind == PredictionKind::Translate {
+            (
+                format!(
+                    "{}\n{}",
+                    prompt::system_prompt(request),
+                    self.translation_style.instruction()
+                ),
+                2000,
+            )
+        } else {
+            (prompt::system_prompt(request).to_owned(), MAX_TOKENS)
+        };
+        let content = self.chat(&system, &user, budget).await?;
         Ok(prompt::parse_reply(&content, request))
     }
 
@@ -75,6 +89,26 @@ impl ChatClient {
         system: &str,
         user: &str,
         max_tokens: u32,
+    ) -> Result<String, PredictError> {
+        self.chat_inner(system, user, max_tokens, true).await
+    }
+
+    /// 临时整句译文不进入运行日志；错误只保留原因。
+    pub(crate) async fn chat_translation(
+        &self,
+        system: &str,
+        user: &str,
+        max_tokens: u32,
+    ) -> Result<String, PredictError> {
+        self.chat_inner(system, user, max_tokens, false).await
+    }
+
+    async fn chat_inner(
+        &self,
+        system: &str,
+        user: &str,
+        max_tokens: u32,
+        log_content: bool,
     ) -> Result<String, PredictError> {
         let messages: Vec<ChatCompletionRequestMessage> = vec![
             ChatCompletionRequestSystemMessage::from(system).into(),
@@ -111,14 +145,18 @@ impl ChatClient {
             .find_map(|choice| choice.message.content.filter(|c| !c.trim().is_empty()))
             .ok_or_else(|| {
                 // 正文为空时原因五花八门（思考占满额度、模型名不对、接口字段不标准），留下原始响应才查得了
-                tracing::warn!(model = %self.model, response = %truncated(&raw), "接口回复里没有正文");
+                if log_content {
+                    tracing::warn!(model = %self.model, response = %truncated(&raw), "接口回复里没有正文");
+                }
                 if cut_off {
                     PredictError::BudgetExhausted
                 } else {
                     PredictError::EmptyReply
                 }
             })?;
-        tracing::debug!(%content, "模型回复");
+        if log_content {
+            tracing::debug!(%content, "模型回复");
+        }
         Ok(content)
     }
 }
@@ -178,19 +216,24 @@ fn host_of(base_url: &str) -> Option<String> {
 
 /// 按接口地址决定 HTTP 客户端：OpenCode 带上它要求的会话头，其他服务用默认客户端。
 /// 头装不上（理论上不会）就退回默认客户端，请求照发，让服务端的报错说明问题。
-fn http_client(base_url: &str) -> reqwest::Client {
-    if !is_opencode(base_url) {
-        return reqwest::Client::new();
-    }
-    let Ok(value) = HeaderValue::from_str(&SESSION_ID) else {
-        return reqwest::Client::new();
-    };
+pub(crate) fn http_client(base_url: &str) -> reqwest::Client {
+    #[cfg(target_os = "android")]
+    let _ = rustls::crypto::ring::default_provider().install_default();
     let mut headers = HeaderMap::new();
-    headers.insert(OPENCODE_SESSION_HEADER, value);
-    reqwest::Client::builder()
-        .default_headers(headers)
-        .build()
-        .unwrap_or_default()
+    if is_opencode(base_url)
+        && let Ok(value) = HeaderValue::from_str(&SESSION_ID)
+    {
+        headers.insert(OPENCODE_SESSION_HEADER, value);
+    }
+    let builder = reqwest::Client::builder().default_headers(headers);
+    // Android 网络工人不依赖 Java TLS 回调；使用 Mozilla 根证书并保留主机名验证。
+    #[cfg(target_os = "android")]
+    let builder = builder.tls_certs_only(
+        webpki_root_certs::TLS_SERVER_ROOT_CERTS
+            .iter()
+            .filter_map(|der| reqwest::Certificate::from_der(der.as_ref()).ok()),
+    );
+    builder.build().unwrap_or_default()
 }
 
 /// 接口地址是否指向 OpenCode（`opencode.ai` 及其子域）。

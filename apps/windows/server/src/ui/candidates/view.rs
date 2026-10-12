@@ -11,6 +11,7 @@ use windows::Win32::Graphics::Gdi::{
 };
 
 use super::RenderData;
+use super::paragraph;
 use super::theme::Theme;
 
 /// 云端候选词前的小云朵（macOS 用 SF Symbol `cloud`）。
@@ -47,6 +48,19 @@ fn vertical_size(hdc: HDC, data: &RenderData) -> (i32, i32) {
         body_width += theme.column_gap + columns.annotation_width;
     }
     let mut body_height = columns.row_height * data.rows.len() as i32;
+    let wrap_width = paragraph::width(theme, body_width - columns.index_width - theme.column_gap);
+    for row in &data.rows {
+        if row.annotation_below && !row.annotation.is_empty() {
+            let size = paragraph::measure(
+                hdc,
+                theme.annotation_font,
+                &paragraph::text(row),
+                wrap_width,
+            );
+            body_width = body_width.max(columns.index_width + theme.column_gap + size.cx);
+            body_height += size.cy + theme.row_padding;
+        }
+    }
     if let Some(footer) = &data.footer {
         let size = measure(hdc, theme.index_font, footer);
         body_width = body_width.max(size.cx);
@@ -92,6 +106,15 @@ fn highlighted_annotation_size(hdc: HDC, data: &RenderData) -> Option<(i32, i32)
     let row = data.rows.get(data.highlight)?;
     if row.annotation.is_empty() {
         return None;
+    }
+    if row.annotation_below {
+        let size = paragraph::measure(
+            hdc,
+            theme.annotation_font,
+            &paragraph::text(row),
+            paragraph::width(theme, i32::MAX),
+        );
+        return Some((size.cx, size.cy + theme.row_padding));
     }
     let width: i32 = row
         .annotation
@@ -224,13 +247,25 @@ fn draw_rows(hdc: HDC, data: &RenderData, mut y: i32, width: i32) {
     let columns = columns(hdc, theme, &data.rows);
     let text_x = theme.padding + columns.index_width + theme.column_gap;
     let annotation_x = text_x + columns.text_width + theme.column_gap;
+    let wrap_width = paragraph::width(
+        theme,
+        width - theme.padding * 2 - columns.index_width - theme.column_gap,
+    );
     for (i, row) in data.rows.iter().enumerate() {
+        let translated = row.annotation_below && !row.annotation.is_empty();
+        let translation = paragraph::text(row);
+        let extra = if translated {
+            paragraph::measure(hdc, theme.annotation_font, &translation, wrap_width).cy
+                + theme.row_padding
+        } else {
+            0
+        };
         if i == data.highlight {
             let rect = RECT {
                 left: theme.padding / 2,
                 top: y,
                 right: width - theme.padding / 2,
-                bottom: y + columns.row_height,
+                bottom: y + columns.row_height + extra,
             };
             fill_round_rect(hdc, rect, theme.highlight, theme.corner_radius / 2);
         }
@@ -246,6 +281,23 @@ fn draw_rows(hdc: HDC, data: &RenderData, mut y: i32, width: i32) {
             &row.index,
         );
         draw_word(hdc, theme, row, text_x, baseline, small_offset);
+        if translated {
+            let top = baseline + text_size.cy + theme.row_padding;
+            paragraph::draw(
+                hdc,
+                theme.annotation_font,
+                theme.gloss_color,
+                &translation,
+                RECT {
+                    left: text_x,
+                    top,
+                    right: text_x + wrap_width,
+                    bottom: top + extra,
+                },
+            );
+            y += columns.row_height + extra;
+            continue;
+        }
         let mut x = annotation_x;
         for (segment, tone) in &row.annotation {
             x += draw_text(
@@ -338,6 +390,24 @@ fn draw_horizontal(hdc: HDC, data: &RenderData, y: i32, width: i32) {
     if let Some(row) = data.rows.get(data.highlight) {
         let mut x = theme.padding + highlight_inset;
         let top = y + row_height + theme.row_padding / 2;
+        if row.annotation_below && !row.annotation.is_empty() {
+            let translation = paragraph::text(row);
+            let wrap_width = paragraph::width(theme, i32::MAX);
+            let size = paragraph::measure(hdc, theme.annotation_font, &translation, wrap_width);
+            paragraph::draw(
+                hdc,
+                theme.annotation_font,
+                theme.gloss_color,
+                &translation,
+                RECT {
+                    left: x,
+                    top,
+                    right: x + wrap_width,
+                    bottom: top + size.cy,
+                },
+            );
+            return;
+        }
         for (segment, tone) in &row.annotation {
             x += draw_text(
                 hdc,
@@ -382,11 +452,14 @@ fn columns(hdc: HDC, theme: &Theme, rows: &[Row]) -> Columns {
     for row in rows {
         let index = measure(hdc, theme.index_font, &row.index);
         let text = measure(hdc, theme.text_font, &row.text);
-        let annotation: i32 = row
-            .annotation
-            .iter()
-            .map(|(s, _)| measure(hdc, theme.annotation_font, s).cx)
-            .sum();
+        let annotation: i32 = if row.annotation_below {
+            0
+        } else {
+            row.annotation
+                .iter()
+                .map(|(s, _)| measure(hdc, theme.annotation_font, s).cx)
+                .sum()
+        };
         columns.index_width = columns.index_width.max(index.cx);
         columns.text_width = columns
             .text_width

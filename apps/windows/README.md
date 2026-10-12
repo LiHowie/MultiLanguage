@@ -1,23 +1,23 @@
-# 青简 Windows 输入法
+# 魔多 Windows 输入法
 
 Windows 端是**一个产品、两个产物**，各自一个 package，同放本目录：
 
 | 目录 | package | 产物 | 职责 |
 | --- | --- | --- | --- |
-| `server/` | `qingjian-windows-server` | `qingjian-server.exe` | 持有唯一的输入内核 `qingjian-core::Engine`，跑在所有应用进程之外 |
-| `tsf/` | `qingjian-windows-tsf` | `qingjian_tsf.dll` | TSF 文本服务，被加载进每个应用进程，只做按键转发与文档写入（候选窗口由 Server 自绘） |
+| `server/` | `qingjian-windows-server` | `modo-server.exe` | 持有唯一的输入内核 `qingjian-core::Engine`，跑在所有应用进程之外 |
+| `tsf/` | `qingjian-windows-tsf` | `modo_tsf.dll` | TSF 文本服务，被加载进每个应用进程，只做按键转发与文档写入（候选窗口由 Server 自绘） |
 
 ```
-应用进程 A ── qingjian_tsf.dll ─┐
-应用进程 B ── qingjian_tsf.dll ─┼─ 命名管道 \\.\pipe\qingjian ─▶ qingjian-server（唯一的 Engine）
-应用进程 C ── qingjian_tsf.dll ─┘
+应用进程 A ── modo_tsf.dll ─┐
+应用进程 B ── modo_tsf.dll ─┼─ 命名管道 \\.\pipe\modo ─▶ modo-server（唯一的 Engine）
+应用进程 C ── modo_tsf.dll ─┘
 ```
 
 ## 为什么核心逻辑要在进程外
 
 Windows 的文本服务（TSF，Text Services Framework）是一个 COM DLL（`ITfTextInputProcessor`），
 系统会把它加载进**每一个**接受文本输入的应用进程。因此输入内核不能待在 DLL 里（会被复制进几十个进程、
-状态无法共享、崩溃会连累宿主应用）。青简照 Weasel（WeaselServer + WeaselTSF）、水杉（Server 进程）的做法：
+状态无法共享、崩溃会连累宿主应用）。魔多照 Weasel（WeaselServer + WeaselTSF）、水杉（Server 进程）的做法：
 Engine 只此一份，跑在独立的 Server 进程；每个应用进程里的 TSF DLL 只做两件事——把系统按键翻成协议消息发来、
 把 Server 回的候选画到候选窗口。
 
@@ -87,22 +87,22 @@ Server 会记警告，但**它只警告、不拒绝**，别指望它兜住。
 :: 1) 编译出 DLL 与 Server
 cargo build -p qingjian-windows-tsf -p qingjian-windows-server
 
-:: 2) 注册文本服务（改 HKEY_CLASSES_ROOT，图标写到 %ProgramData%\Qingjian\qingjian.ico，要管理员）
-regsvr32 target\debug\qingjian_tsf.dll
+:: 2) 注册文本服务（改 HKEY_CLASSES_ROOT，图标写到 %ProgramData%\Modo\modo.ico，要管理员）
+regsvr32 target\debug\modo_tsf.dll
 
 :: 3) 起 Server（引擎在这里；没起时 DLL 吃掉字母键但没有候选，起来后下一键 / 下次聚焦自动重连）
 cargo run -p qingjian-windows-server
 
-:: 4) 在系统「语言 / 输入法」里应能看到「青简」，切到它，在任意输入框敲字
-::    日志都在 %LOCALAPPDATA%\Qingjian\logs\：server.<日期>.log / tsf.<日期>.log / settings.<日期>.log（按天，留 7 天）
+:: 4) 在系统「语言 / 输入法」里应能看到「魔多」，切到它，在任意输入框敲字
+::    日志都在 %LOCALAPPDATA%\Modo\logs\：server.<日期>.log / tsf.<日期>.log / settings.<日期>.log（按天，留 7 天）
 
 :: 反注册
-regsvr32 /u target\debug\qingjian_tsf.dll
+regsvr32 /u target\debug\modo_tsf.dll
 ```
 
 ## 设置程序与 Windows App Runtime
 
-`settings/`（`qingjian-settings.exe`）用 Windows Reactor（WinUI 3）画界面，是三个产物里唯一依赖 Windows App Runtime 的。
+`settings/`（`modo-settings.exe`）用 Windows Reactor（WinUI 3）画界面，是三个产物里唯一依赖 Windows App Runtime 的。
 它的部署方式是**自包含**：`build.rs` 让 `windows-reactor-setup` 把 `Microsoft.WindowsAppSDK.Runtime` 的 MSIX 解到
 `target\release\` 并按自包含标记嵌清单，安装包把这些文件装到 exe 同级——不依赖机器上装没装框架包。
 Windows 10 上框架依赖的引导走不通（它要先调 Windows 11 才有的 `TryCreatePackageDependency`），

@@ -29,6 +29,7 @@ impl Router {
             Some((items, preedit, cursor, typed_keys)) => {
                 let layout =
                     CandidateLayout::new(items, self.config.page_size, self.config.cloud_slots);
+                self.engine.request_sentence_translation(layout.local());
                 if self.engine.prediction_enabled() {
                     self.engine.request_prediction(None, layout.local());
                 }
@@ -84,9 +85,7 @@ impl Router {
     }
 
     pub(super) fn cancel_prediction(&mut self) {
-        if self.engine.prediction_enabled() {
-            self.engine.cancel_prediction();
-        }
+        self.engine.cancel_prediction();
     }
 
     /// 高亮移动 `delta`，夹在 `[0, 末尾]`，到页边自然换页。
@@ -99,6 +98,7 @@ impl Router {
         let next = (self.highlight as isize + delta).clamp(0, count as isize - 1) as usize;
         self.navigated |= next != self.highlight;
         self.highlight = next;
+        self.translate_highlight();
     }
 
     /// 整页翻 `step`，高亮落到目标页第一个候选。
@@ -117,6 +117,14 @@ impl Router {
             self.engine.note_page_turn();
         }
         self.highlight = (target * page_size).min(count - 1);
+        self.translate_highlight();
+    }
+
+    /// 导航到另一个整句候选时按新的原文翻译。
+    fn translate_highlight(&mut self) {
+        if let Some(candidate) = self.layout_candidate(self.highlight) {
+            self.engine.request_sentence_translation(&[candidate]);
+        }
     }
 
     pub(super) fn candidate_count(&self) -> usize {

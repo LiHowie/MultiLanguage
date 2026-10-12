@@ -1,6 +1,6 @@
 //! 「云服务」页：本地整句模型开关（`[model]`）、`[predict]` 各项与「测试连接」（后台线程跑）。
 
-use qingjian_predict::{ConnectionTest, PredictConfig};
+use qingjian_predict::{ConnectionTest, PredictConfig, TranslationStyle};
 use windows_reactor::*;
 
 use crate::panel::cloud_status::CloudStatus;
@@ -12,6 +12,13 @@ pub(crate) fn run_test(
     config: &PredictConfig,
     cancel: &CancellationToken,
 ) -> Result<String, String> {
+    if config.membership_service {
+        let value = qingjian_predict::MembershipClient::new(config)?.block("/me", None)?;
+        return Ok(format!(
+            "连接成功：{}",
+            value["user"]["email"].as_str().unwrap_or("魔多账号")
+        ));
+    }
     let test = ConnectionTest::start(config).map_err(|error| error.to_string())?;
     loop {
         if cancel.is_cancelled() {
@@ -34,6 +41,18 @@ pub(crate) fn run_test(
 
 pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> View {
     let p = &settings.config.predict;
+    if p.membership_service {
+        return page("整句翻译", StackPanel::new().spacing(16.0).children([
+            field("会员整句翻译", "停顿后翻译当前整句候选；基础打字和本地单词译词继续免费。先在会员与语音老师页登录并同意云端处理。",
+                ToggleSwitch::new().is_on(p.sentence_translation).on_toggled(context.callback(Message::SentenceTranslation))),
+            field("翻译风格", "口语化适合聊天；书面化适合邮件和文章。",
+                ComboBox::new().items_source(["口语化", "书面化"]).selected_index(TranslationStyle::ALL.iter().position(|style| *style == p.translation_style))
+                    .on_selection_changed(context.callback(Message::TranslationStyle))),
+            field("本地整句模型", "在本机调整中文候选排序，不消耗会员额度。",
+                ToggleSwitch::new().is_on(settings.config.model.enabled).on_toggled(context.callback(Message::LocalModel))),
+            note("普通选词输出中文，Ctrl + 数字输出译文。会员到期或网络异常时仍可正常输入中文。"),
+        ]));
+    }
     let status = match &settings.cloud_status {
         CloudStatus::Idle => String::new(),
         CloudStatus::Testing => "测试中…".to_owned(),
@@ -47,6 +66,25 @@ pub(crate) fn view(settings: &Settings, context: &mut ViewContext<Settings>) -> 
             ToggleSwitch::new()
                 .is_on(settings.config.model.enabled)
                 .on_toggled(context.callback(Message::LocalModel)),
+        ),
+        field(
+            "整句 AI 翻译",
+            "停顿后把当前整句候选发给下面的 AI，译文显示在候选下方。目标跟随通用页的学习语言；可单独开启，无需云联想。普通选词输出中文，Ctrl + 数字输出译文。",
+            ToggleSwitch::new()
+                .is_on(p.sentence_translation)
+                .on_toggled(context.callback(Message::SentenceTranslation)),
+        ),
+        field(
+            "翻译风格",
+            "口语化适合聊天和口头表达；书面化适合邮件和文章。也用于 Ctrl + Alt + T 翻译选中文字。",
+            ComboBox::new()
+                .items_source(["口语化", "书面化"])
+                .selected_index(
+                    TranslationStyle::ALL
+                        .iter()
+                        .position(|style| *style == p.translation_style),
+                )
+                .on_selection_changed(context.callback(Message::TranslationStyle)),
         ),
         field(
             "启用云联想",

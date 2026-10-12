@@ -208,6 +208,7 @@ impl Router {
             rebuilt.set_cloud(cloud);
         }
         *layout = rebuilt;
+        self.engine.request_sentence_translation(layout.local());
         (*preedit, *cursor, *typed_keys) = marked_parts(&query);
         let frame = self.self_drawn_frame();
         self.reconcile_candidates(&frame);

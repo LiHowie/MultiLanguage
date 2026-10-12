@@ -385,6 +385,7 @@ impl Engine {
     }
 
     pub fn set_translator(&mut self, translator: Box<dyn Translator>) {
+        self.sentence_translation.cancel();
         self.translator = translator;
     }
 

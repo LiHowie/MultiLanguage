@@ -23,6 +23,7 @@ pub mod storage;
 pub mod zhuyin;
 
 pub use custom_phrase::CustomPhrase;
+pub use engine::Keypad;
 
 pub use candidate::{
     Candidate, CandidateKind, CandidateLayout, CandidateList, Cell, GRID_ROWS, Grid, Language,
@@ -38,8 +39,9 @@ pub use engine::{
     ModeKeys, NEURAL_MARGIN, NEURAL_WEIGHT, NoGlossFiller, NoInputLogger, NoLearner, NoPredictor,
     NoTranslator, NoUsageMeter, NoVocabularyTracker, Prediction, PredictionKind, PredictionPolicy,
     PredictionRequest, Predictor, QUESTION_PREFIX, Query, RESCORE_CONTEXT_CHARS, RawPreedit,
-    SurroundingText, Timings, Translator, Usage, UsageMeter, UsageSummary, VocabularySummary,
-    VocabularyTracker, book_scale, is_valid_aux_code_key,
+    SentenceTranslationRequest, SentenceTranslationResult, SentenceTranslator, SurroundingText,
+    Timings, Translator, Usage, UsageMeter, UsageSummary, VocabularySummary, VocabularyTracker,
+    book_scale, is_valid_aux_code_key,
 };
 pub use fuzzy::FuzzyRules;
 pub use history::InputHistory;
