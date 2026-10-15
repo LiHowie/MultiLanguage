@@ -72,7 +72,7 @@ uuid = { version = "1.26", features = ["v4"] }
 tokio = { version = "1.53.1", features = ["rt", "time"] }
 
 # Android JNI 与不依赖 Java 回调的 TLS
-jni = "0.21.1"
+jni = "0.22.4"
 rustls = { version = "0.23", default-features = false, features = ["ring", "std", "tls12"] }
 webpki-root-certs = "1.0.9"
 
