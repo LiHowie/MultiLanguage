@@ -10,6 +10,8 @@
 
 Windows设置程序附带Microsoft.WindowsAppSDK.Runtime 2.4.0；这些未修改的微软运行时文件按其独立许可提供，不改标为魔多GPL源码。许可原文见安装包的 `licenses/Microsoft-WindowsAppSDK-Runtime-2.4.0.txt` 和[NuGet官方许可](https://www.nuget.org/packages/Microsoft.WindowsAppSDK.Runtime/2.4.0/License)。本项目保持微软与第三方声明，分发者需遵守该运行时的分发条款。
 
+Windows安装向导使用未修改的Inno Setup7.1.0构建，保留其版权和网站信息。Copyright © 1997–2026 Jordan Russell；Portions Copyright © 2000–2026 Martijn Laan。许可与来源见[Inno Setup](https://jrsoftware.org/files/is/license.txt)。
+
 青简的数据清单标注部分规范字表、常用词表转录仓库未附许可证。开发版保留来源记录；公开商业发行前须完成这些数据的授权核验或替换，不能把仓库根 GPL 视为所有数据的商用保证。
 
 发布安装包时，提供该版本完整对应源码、构建与安装脚本，并在下载处提供不额外收费的源码获取方式。不得通过魔多使用协议限制 GPL 授予的修改或再分发权利。

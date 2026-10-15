@@ -24,7 +24,7 @@
 #ifndef AppVersionNumeric
   #define AppVersionNumeric AppVersion
 #endif
-#define AppName "魔多"
+#define AppName "魔多外语学习输入法"
 #define Publisher "魔多"
 #define WebsiteUrl "https://github.com/LiHowie/MultiLanguage"
 ; 脚本相对仓库根（ime/）：installer → windows → apps → ime
@@ -43,6 +43,9 @@ VersionInfoVersion={#AppVersionNumeric}
 DefaultDirName={autopf}\Modo
 DefaultGroupName={#AppName}
 DisableProgramGroupPage=yes
+DisableWelcomePage=yes
+DisableDirPage=yes
+DisableReadyPage=no
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 ; Windows 10 1809 起（Windows App Runtime 的下限，见 docs\notes\windows-win10.md）。
@@ -50,13 +53,17 @@ MinVersion=10.0.17763
 PrivilegesRequired=admin
 ; 别让 Restart Manager 去关所有加载了 DLL 的应用（那是每一个有文本框的应用）。
 CloseApplications=no
-OutputDir={#Repo}\target\installer
-OutputBaseFilename=qingjian-{#AppVersion}-windows-x86_64-setup
+OutputDir={#Repo}\dist
+OutputBaseFilename=Modo-{#AppVersion}-Windows-Setup
 SetupIconFile={#Repo}\apps\windows\tsf\resources\modo.ico
 UninstallDisplayIcon={app}\modo.ico
 Compression=lzma2
 SolidCompression=yes
+CompressionThreads=2
+LZMANumBlockThreads=2
 WizardStyle=modern
+UninstallDisplayName=魔多外语学习输入法
+SetupMutex=Global\ModoInstallerRunning
 
 [Languages]
 Name: "chs"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
@@ -64,12 +71,16 @@ Name: "chs"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 [Messages]
 ; 完成页：DLL 会装进每个应用进程，装之前就开着的应用要用新版必须重启（见文件头「升级」）。
 ; 这是最容易被误解成「设置/新版没生效」的一点，所以放在完成页明说。
-FinishedLabel=安装完成。请注销后重新登录（或重启电脑），魔多才会在所有应用里生效。%n%n不方便注销的话，先关掉再重新打开要打字的应用也可以。
+ReadyLabel1=欢迎安装魔多外语学习输入法
+ReadyLabel2a=点击「安装」即可完成安装，并为你添加输入法和设置快捷方式。
+FinishedLabel=魔多已安装完成。%n%n按 Win + Space 可以切换到魔多，开始菜单或桌面的「魔多设置」可以调整学习选项。%n%n若输入法暂未显示，重新打开要打字的应用，或注销后重新登录。
 
 [Files]
 Source: "..\..\..\licenses\*"; DestDir: "{app}\licenses"; Flags: ignoreversion recursesubdirs createallsubdirs
 Source: "{#Repo}\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: "{#Repo}\THIRD_PARTY_NOTICES.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: "{#Repo}\dist\windows-build-info.json"; DestDir: "{app}"; DestName: "build-info.json"; Flags: ignoreversion
+Source: "{#Repo}\apps\windows\installer\Enable-UserProfile.ps1"; DestDir: "{app}"; Flags: ignoreversion
 ; —— 二进制 ——
 ; DLL 按版本起名并排装；卸载时若仍被占用，登记成重启后删。
 Source: "{#Repo}\target\release\modo_tsf.dll";      DestDir: "{app}"; DestName: "{#TsfDll}"; Flags: ignoreversion uninsrestartdelete
@@ -98,18 +109,21 @@ Source: "{#Repo}\data\models\hanzhang-tongbian\hanzhang-tongbian-small.qjm"; Des
 ; —— 随 git 的资源 ——
 Source: "{#Repo}\assets\emoji\emoji-zh.tsv";     DestDir: "{app}\assets\emoji";  Flags: ignoreversion
 Source: "{#Repo}\assets\emoji\emoji-en.tsv";     DestDir: "{app}\assets\emoji";  Flags: ignoreversion
+Source: "{#Repo}\assets\emoji\LICENSE-unicode.txt"; DestDir: "{app}\assets\emoji"; Flags: ignoreversion
 Source: "{#Repo}\assets\levels\levels-en.tsv";   DestDir: "{app}\assets\levels"; Flags: ignoreversion
 Source: "{#Repo}\assets\levels\levels-ja.tsv";   DestDir: "{app}\assets\levels"; Flags: ignoreversion
 ; 五笔码表（输入方案选五笔时用，见 assets/wubi/README.md；极点 86 码表，Apache-2.0）。
 ; 走 assets\ 与 emoji / levels 一致，Server 的 `dispatch::code::find_code_table` 照同一个相对路径找，
 ; 开发布局（cargo run）也对得上
 Source: "{#Repo}\assets\wubi\wubi86.tsv";        DestDir: "{app}\assets\wubi";   Flags: ignoreversion
+Source: "{#Repo}\assets\wubi\LICENSE"; DestDir: "{app}\assets\wubi"; Flags: ignoreversion
 Source: "{#Repo}\assets\sample\dict.tsv";        DestDir: "{app}\assets\sample"; Flags: ignoreversion
 ; —— Server 放最后：它一落地，旧版 DLL 就能把它拉起来并占住数据文件（见文件头）——
 Source: "{#Repo}\target\release\modo-server.exe";   DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\魔多设置"; Filename: "{app}\modo-settings.exe"; IconFilename: "{app}\modo.ico"
+Name: "{commondesktop}\魔多设置"; Filename: "{app}\modo-settings.exe"; IconFilename: "{app}\modo.ico"
 Name: "{group}\卸载魔多"; Filename: "{uninstallexe}"
 ; 登录自启：登录时 Explorer 走 ShellExecute 拉起本快捷方式 → AppInfo 授予 uiAccess，候选窗才能盖过商店 / 任务栏搜索。
 ; 用 {commonstartup}（所有用户「启动」文件夹）而非 {userstartup}：本安装器是 admin 机器级安装，
@@ -119,18 +133,7 @@ Name: "{group}\卸载魔多"; Filename: "{uninstallexe}"
 Name: "{commonstartup}\魔多 Server"; Filename: "{app}\modo-server.exe"; WorkingDir: "{app}"; IconFilename: "{app}\modo.ico"
 
 [Run]
-; ① UWP/AppContainer 应用要能读安装目录才能加载 DLL（*S-1-15-2-1 = ALL APPLICATION PACKAGES，按 SID 与语言无关）。
-Filename: "{sys}\icacls.exe"; Parameters: """{app}"" /grant *S-1-15-2-1:(OI)(CI)RX /T /C /Q"; \
-  Flags: runhidden waituntilterminated; StatusMsg: "配置应用容器权限…"
-; ② 注册文本服务（写 HKCR + 图标到 %ProgramData%\Modo\modo.ico）。注册的是本版本的 DLL，
-;    InprocServer32 指向新文件；旧版本的 DLL **不能** regsvr32 /u（那会把整个 CLSID 注销掉）。
-Filename: "{sys}\regsvr32.exe"; Parameters: "/s ""{app}\{#TsfDll}"""; \
-  Flags: runhidden waituntilterminated; StatusMsg: "注册输入法…"
-; 32 位那份用 SysWOW64 里的 32 位 regsvr32 注册，InprocServer32 才落到 WOW6432Node 下给 32 位进程用。
-Filename: "{syswow64}\regsvr32.exe"; Parameters: "/s ""{app}\{#TsfDll32}"""; \
-  Flags: runhidden waituntilterminated; StatusMsg: "注册输入法（32 位）…"
-; ④ 装完立即起一次 Server 见 [Code] 的 NextButtonClick：uiAccess=true 的 exe 不能用
-;    CreateProcess / runasoriginaluser 拉起（报 740），必须走 ShellExecute（等同双击）。
+Filename: "{app}\modo-settings.exe"; Description: "打开魔多设置"; Flags: postinstall nowait skipifsilent
 
 [UninstallRun]
 ; 反向：先删登录任务、杀 Server / 设置程序、反注册 DLL，Inno 再删文件（DLL 若仍被占用，重启后删）。
@@ -146,8 +149,6 @@ Filename: "{syswow64}\regsvr32.exe"; Parameters: "/u /s ""{app}\{#TsfDll32}"""; 
   Flags: runhidden; RunOnceId: "UnregDll32"
 
 [InstallDelete]
-; 更早版本装在当前用户「启动」文件夹里的自启快捷方式：与机器级那份并存会起两个 Server（两条状态条）。
-Type: files; Name: "{userstartup}\Modo Server.lnk"
 ; 更早版本装的模型三件套（现在只带正式命名的 .qjm）：留着白占 56 MB。
 Type: files; Name: "{app}\data\model\model.safetensors"
 Type: files; Name: "{app}\data\model\config.json"
@@ -287,10 +288,41 @@ begin
   end;
 end;
 
+procedure RunRequiredTool(const Filename, Params, Description: String);
+var
+  ResultCode: Integer;
+begin
+  if not Exec(Filename, Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    RaiseException(Description + '失败：无法启动系统安装组件。');
+  if ResultCode <> 0 then
+    RaiseException(Description + '失败，系统错误码：' + IntToStr(ResultCode));
+end;
+
+procedure EnableCurrentUserProfile;
+var
+  ResultCode: Integer;
+  Params: String;
+begin
+  Params := '-NoLogo -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "' +
+    ExpandConstant('{app}\Enable-UserProfile.ps1') + '"';
+  if not ExecAsOriginalUser(ExpandConstant('{sys}\WindowsPowerShell\v1.0\powershell.exe'),
+    Params, '', SW_HIDE, ewWaitUntilTerminated, ResultCode) then
+    RaiseException('无法为当前用户启用魔多输入法，请重新运行安装程序。');
+  if ResultCode <> 0 then
+    RaiseException('魔多文件已安装，但加入当前用户输入法列表失败，系统错误码：' + IntToStr(ResultCode));
+end;
+
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
+    RunRequiredTool(ExpandConstant('{sys}\icacls.exe'),
+      '"' + ExpandConstant('{app}') + '" /grant *S-1-15-2-1:(OI)(CI)RX /T /C /Q', '配置应用权限');
+    RunRequiredTool(ExpandConstant('{sys}\regsvr32.exe'),
+      '/s "' + ExpandConstant('{app}\{#TsfDll}') + '"', '注册魔多输入法');
+    RunRequiredTool(ExpandConstant('{syswow64}\regsvr32.exe'),
+      '/s "' + ExpandConstant('{app}\{#TsfDll32}') + '"', '注册32位魔多输入法');
+    EnableCurrentUserProfile;
     DeleteLegacyLogonTask;
     DeleteStaleDlls;
     DeleteRetiredServers;
@@ -307,13 +339,12 @@ end;
 { 装完在完成页点 Finish 后立即起一次 Server。
   uiAccess=true 的 exe 不能用 CreateProcess / runasoriginaluser 拉起（报 740），
   必须以原（非提升）用户身份 ShellExecute（等同双击），AppInfo 才会授予 uiAccess 高 z-band 权限。 }
-function NextButtonClick(CurPageID: Integer): Boolean;
+procedure CurPageChanged(CurPageID: Integer);
 var
   ErrorCode: Integer;
 begin
-  Result := True;
   if (CurPageID = wpFinished) and (not WizardSilent) then
     ShellExecAsOriginalUser(
       '', ExpandConstant('{app}\modo-server.exe'), '', '',
-      SW_SHOWNORMAL, ewNoWait, ErrorCode);
+      SW_HIDE, ewNoWait, ErrorCode);
 end;

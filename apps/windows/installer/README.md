@@ -1,6 +1,10 @@
 # 魔多 Windows 安装包
 
-当前开发版提供ZIP：`build.ps1 -Zip` 构建后输出 `dist/Modo-0.1.0-dev-Windows.zip`，含管理员安装/卸载脚本、自包含运行时、两种位数DLL和许可。操作见[魔多构建说明](../../../docs/notes/modo-build.md)。下文Inno为后续EXE打包方式，已有Inno环境时可使用；原上游自动发版流程在魔多仓库禁用。
+给用户使用的安装包是 `dist/Modo-<版本>-Windows-Setup.exe`：双击后确认Windows管理员授权，点击「安装」，自动复制文件、注册32/64位输入法、为发起安装的用户启用魔多、创建桌面和开始菜单的设置快捷方式、配置登录自启。完成页启动Server，默认打开设置。Windows已安装应用中可卸载，保留用户学习数据。
+
+使用Inno Setup7.1.0构建，`build.ps1`生成EXE；`-SkipBuild`复用已构建的客户端。构建脚本也查找本仓库 `target/tools/InnoSetup7/ISCC.exe`。编译器来自官方签名安装包并核验SHA256，许可见[官方文本](https://jrsoftware.org/files/is/license.txt)。原上游自动发版流程在魔多仓库禁用。
+
+`build.ps1 -Zip`保留开发ZIP，包含管理员安装/卸载脚本、运行时和数据，操作见[魔多构建说明](../../../docs/notes/modo-build.md)。
 
 解压后双击 `Install.cmd`，在Windows管理员授权窗口选择「是」。安装结果会留在窗口中，按回车关闭；卸载双击 `Uninstall.cmd`。这两个入口通过 `Run-Installer.ps1` 请求UAC授权，再调用对应脚本，不修改系统执行策略。`Install.ps1` 的右键菜单没有「以管理员身份运行」也可使用CMD入口。
 
@@ -71,7 +75,7 @@ powershell -ExecutionPolicy Bypass -File apps\windows\installer\build.ps1
 ```
 
 脚本 release 构建三个产物、从 `apps\windows\server\Cargo.toml` 读版本、找 `ISCC.exe`、编 `qingjian.iss`，
-成品在 `target\installer\qingjian-<版本>-windows-x86_64-setup.exe`。改了数据 / 脚本但二进制没变时加 `-SkipBuild`；`-Sign` 用自签证书签产物
+成品在 `dist\Modo-<版本>-Windows-Setup.exe`，同目录写出SHA256。改了数据 / 脚本但二进制没变时加 `-SkipBuild`；`-Sign` 用自签证书签产物
 （uiAccess 要求 Server 签名 + 装 Program Files）。
 
 也可手动：`iscc /DAppVersion=0.1.0 apps\windows\installer\qingjian.iss`。

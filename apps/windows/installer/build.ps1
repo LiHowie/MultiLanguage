@@ -6,7 +6,7 @@
       1) cargo build --release 出 DLL / Server / 设置程序，再单独编一份 32 位 DLL；
       2) 从 apps\windows\server\Cargo.toml 读版本号（-dev 版接 git 短哈希）；
       3) 找 ISCC.exe（PATH 或常见安装位置）；
-      4) iscc /DAppVersion=<版本> 编脚本，成品在 target\installer\qingjian-<版本>-windows-x86_64-setup.exe。
+      4) iscc /DAppVersion=<版本> 编脚本，成品在 dist\Modo-<版本>-Windows-Setup.exe。
     随包数据（.qj / .tsv）直接由 .iss 从仓库 data\generated 与 assets 里取，不另建暂存目录；
     确保打包前 data\generated 里的 .qj 是最新的（bundle 流程见仓库 CLAUDE.md）。
     uiAccess 跟着 -Sign 走，不用手设 QINGJIAN_UIACCESS（见 -Sign）。
@@ -16,6 +16,8 @@
     自签产物（sign-local.ps1）并开 uiAccess（候选窗才能盖过商店 / 任务栏搜索）。uiAccess=true 的 exe 要本机受信任的签名
     才准启动，自签证书只有编译机信任——所以 -Sign 只用于本机真机测，对外分发的包不加此开关：不签名、关 uiAccess，
     候选窗在那几个系统界面里会被盖住，但任何机器都能起。
+.PARAMETER Zip
+    生成保留的开发ZIP；不指定时生成供用户直接双击的EXE安装向导。
 #>
 [CmdletBinding()]
 param([switch]$SkipBuild, [switch]$Sign, [switch]$Zip)
@@ -116,11 +118,31 @@ if ($Version.EndsWith('-dev')) {
 $VersionNumeric = $Version -replace '-.*$', ''
 Write-Host "版本 $Version" -ForegroundColor Cyan
 
+# 安装包独立携带来源与二进制摘要，干净检出也无需预先手写dist文件。
+$modoDist=Join-Path $Repo 'dist'
+New-Item -ItemType Directory -Path $modoDist -Force | Out-Null
+Push-Location $Repo
+try {
+    $modoCommit=git rev-parse HEAD
+    if($LASTEXITCODE -ne 0){throw '无法读取安装包对应源码提交'}
+    $modoDirty=[bool](git status --porcelain)
+} finally {Pop-Location}
+$modoBinaries=[ordered]@{}
+foreach($modoBinary in $targets){$modoBinaries[$modoBinary]=(Get-FileHash -LiteralPath (Join-Path $Repo "target\$modoBinary") -Algorithm SHA256).Hash.ToLowerInvariant()}
+$modoBuildInfo=[ordered]@{
+    product='魔多外语学习输入法';platform='windows';version=$Version
+    source_commit=$modoCommit;source_url=('https://github.com/LiHowie/MultiLanguage/tree/'+$modoCommit);source_dirty=$modoDirty
+    client_binary_sha256=$modoBinaries;ui_access=[bool]$Sign
+    data_lock_sha256=(Get-FileHash -LiteralPath (Join-Path $Repo 'tools\release\data.lock') -Algorithm SHA256).Hash.ToLowerInvariant()
+}
+[IO.File]::WriteAllText((Join-Path $modoDist 'windows-build-info.json'),($modoBuildInfo|ConvertTo-Json -Depth 4)+[Environment]::NewLine,[Text.UTF8Encoding]::new($false))
+
 # 3) 找 ISCC.exe：先 Program Files 里的 7（与开发机同版本；CI 镜像 PATH 上自带 Chocolatey 的 6，不带简中翻译，不能让它抢先），
 #    再 PATH，最后 6。QINGJIAN_ISCC 环境变量可直接指定。
 $iscc = $env:QINGJIAN_ISCC
 if (-not $iscc) {
     $candidates = @(
+        (Join-Path $Repo 'target\tools\InnoSetup7\ISCC.exe'),
         "${env:ProgramFiles}\Inno Setup 7\ISCC.exe",
         "${env:ProgramFiles(x86)}\Inno Setup 7\ISCC.exe"
     )
@@ -141,5 +163,8 @@ Write-Host "用 $iscc" -ForegroundColor Cyan
 & $iscc "/DAppVersion=$Version" "/DAppVersionNumeric=$VersionNumeric" $Iss
 if ($LASTEXITCODE -ne 0) { throw "iscc 失败（退出码 $LASTEXITCODE）" }
 
-$out = Join-Path $Repo "target\installer\qingjian-$Version-windows-x86_64-setup.exe"
+$out = Join-Path $Repo "dist\Modo-$Version-Windows-Setup.exe"
+if(-not (Test-Path -LiteralPath $out)){throw '编译器没有生成预期的安装程序'}
+$outHash=(Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToLowerInvariant()
+[IO.File]::WriteAllText(($out+'.sha256'),($outHash+'  '+[IO.Path]::GetFileName($out)+[Environment]::NewLine),[Text.UTF8Encoding]::new($false))
 Write-Host "完成：$out" -ForegroundColor Green
