@@ -3024,7 +3024,7 @@ dependencies = [
 name = "qingjian-windows-settings"
 version = "0.1.0-dev"
 dependencies = [
- "base64 0.22.1",
+ "base64 0.23.1",
  "jiff",
  "qingjian-core",
  "qingjian-dictionary",
