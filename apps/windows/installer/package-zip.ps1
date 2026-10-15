@@ -14,7 +14,7 @@ Get-ChildItem -LiteralPath (Join-Path $modoRepo 'data\generated') | ForEach-Obje
 foreach($modoAsset in @('emoji','levels','wubi','sample','stroke')){New-Item -ItemType Directory -Path (Join-Path $modoApp 'assets') -Force | Out-Null;Copy-Item -LiteralPath (Join-Path $modoRepo "assets\$modoAsset") -Destination (Join-Path $modoApp 'assets') -Recurse -Force}
 Copy-Item -LiteralPath (Join-Path $modoRepo 'apps\windows\tsf\resources\modo.ico') -Destination $modoApp -Force
 foreach($modoFile in @('LICENSE','THIRD_PARTY_NOTICES.md','README.md')){Copy-Item -LiteralPath (Join-Path $modoRepo $modoFile) -Destination $modoStage -Force;Copy-Item -LiteralPath (Join-Path $modoRepo $modoFile) -Destination $modoApp -Force}
-foreach($modoFile in @('Install.ps1','Uninstall.ps1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $modoFile) -Destination $modoStage -Force}
+foreach($modoFile in @('Install.ps1','Uninstall.ps1','Install.cmd','Uninstall.cmd','Run-Installer.ps1')){Copy-Item -LiteralPath (Join-Path $PSScriptRoot $modoFile) -Destination $modoStage -Force}
 foreach($modoDest in @($modoStage,$modoApp)){Copy-Item -LiteralPath (Join-Path $modoRepo 'licenses') -Destination $modoDest -Recurse -Force}
 $modoOut=Join-Path $modoRepo 'dist\Modo-0.1.0-dev-Windows.zip'
 New-Item -ItemType Directory -Path ([IO.Path]::GetDirectoryName($modoOut)) -Force | Out-Null

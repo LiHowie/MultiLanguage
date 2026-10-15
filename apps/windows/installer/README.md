@@ -2,6 +2,8 @@
 
 当前开发版提供ZIP：`build.ps1 -Zip` 构建后输出 `dist/Modo-0.1.0-dev-Windows.zip`，含管理员安装/卸载脚本、自包含运行时、两种位数DLL和许可。操作见[魔多构建说明](../../../docs/notes/modo-build.md)。下文Inno为后续EXE打包方式，已有Inno环境时可使用；原上游自动发版流程在魔多仓库禁用。
 
+解压后双击 `Install.cmd`，在Windows管理员授权窗口选择「是」。安装结果会留在窗口中，按回车关闭；卸载双击 `Uninstall.cmd`。这两个入口通过 `Run-Installer.ps1` 请求UAC授权，再调用对应脚本，不修改系统执行策略。`Install.ps1` 的右键菜单没有「以管理员身份运行」也可使用CMD入口。
+
 用 [Inno Setup](https://jrsoftware.org/isinfo.php) 打的安装包，把 TSF DLL（64 位与 32 位各一份）、Server、设置程序与随包数据一起装进
 `C:\Program Files\Modo`，注册文本服务，并设登录自启。对应 macOS 的 pkg。
 

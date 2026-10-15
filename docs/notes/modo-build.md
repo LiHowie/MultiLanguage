@@ -26,7 +26,9 @@ apps\windows\installer\build.ps1 -Zip
 
 保留内部 Cargo package 名便于同步上游，Windows 产物是 `modo-server.exe`、`modo_tsf.dll`、`modo-settings.exe`。数据和日志使用独立的 Modo 目录，TSF GUID、命名管道、安装器 AppId 与青简不同。开发ZIP在 `dist/Modo-0.1.0-dev-Windows.zip`，含GPL和来源声明、自包含WinUI运行时及32/64位TSF。
 
-解压ZIP后，管理员PowerShell运行 `powershell -ExecutionPolicy Bypass -File .\Install.ps1`（仅该进程，不修改系统执行策略）。关闭管理员终端，从安装目录双击 `modo-server.exe`；下次登录自动启动。在Windows键盘设置添加魔多，Win+Space切换，`modo-settings.exe`打开设置。卸载时管理员运行 `Uninstall.ps1`，撤销注册和启动项，保留学习数据，重新登录后可手动删除安装目录。ZIP初次安装使用固定DLL名，升级前请先关闭使用魔多的应用；正式版本化升级流程仍使用Inno。
+解压ZIP后，双击 `Install.cmd`，在Windows管理员授权窗口选择「是」，安装结果会保留到按回车关闭。安装完成后，从安装目录双击 `modo-server.exe`；下次登录自动启动。在Windows键盘设置添加魔多，Win+Space切换，`modo-settings.exe`打开设置。卸载双击 `Uninstall.cmd`，同样确认管理员授权，撤销注册和启动项，保留学习数据，重新登录后可手动删除安装目录。ZIP初次安装使用固定DLL名，升级前请先关闭使用魔多的应用；正式版本化升级流程仍使用Inno。
+
+PowerShell脚本的右键菜单可能没有「以管理员身份运行」。旧包可按Win+X，打开「终端（管理员）」或「Windows PowerShell（管理员）」，输入 `powershell -NoProfile -ExecutionPolicy Bypass -File "安装包解压目录\Install.ps1"`。这只影响该进程，不修改系统执行策略。新的CMD入口由 `Run-Installer.ps1` 处理UAC、路径空格和安装错误，验证时可运行 `powershell -NoProfile -ExecutionPolicy Bypass -File .\Run-Installer.ps1 -WhatIf`，不会执行安装。
 
 已有Inno Setup时，不带 `-Zip` 可生成EXE。上游release工作流在魔多仓库不自动执行；CI保留共用crate和平台编译检查，并增加Node会员服务测试。验收范围见[验证记录](modo-verification.md)。
 
